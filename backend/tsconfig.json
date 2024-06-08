@@ -1,0 +1,14 @@
+{
+    "compilerOptions": {
+      "target": "esnext",
+      "module": "nodenext",
+      "strict": true,
+      "esModuleInterop": true,
+      "skipLibCheck": true,
+      "outDir": "dist",
+      "sourceMap": true,
+      "moduleResolution": "nodenext",
+      "typeRoots": ["./node_modules/@types", "./src/@types"]
+    },
+    "include": ["src"],
+}

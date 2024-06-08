@@ -1,0 +1,189 @@
+.room {
+    display: flex;
+    background-color: #ffffff;
+    flex-direction: column;
+    justify-content: space-between;
+    height: 30rem;
+    width: 100%;
+    border-radius: 0 0 0.5rem 0.5rem;
+    .header {
+        height: 5rem;
+        border-bottom: 2px solid var(--theme-blue);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 1rem;
+
+        .logo {
+            position: relative;
+            img {
+                width: 3.2rem;
+                height: 3.2rem;
+                border-radius: 50%;
+            }
+            .online {
+                position: absolute;
+                bottom: 0;
+                right: 0;
+                width: 1.2rem;
+                height: 1.2rem;
+                background-color: aquamarine;
+                border-radius: 50%;
+                border: 2px solid #ffffff;
+            }
+            .offline{
+                position: absolute;
+                bottom: 0;
+                right: 0;
+                width: 1.2rem;
+                height: 1.2rem;
+                background-color:chocolate;
+                border-radius: 50%;
+                border: 2px solid #ffffff;
+            }
+        }
+        .names {
+            .name {
+                width: 120px;
+                font-size: 1.2rem;
+                font-weight: 700;
+                overflow: hidden;
+                white-space: nowrap;
+                text-overflow: ellipsis;
+            }
+        }
+        img#drop {
+            width: 2.4rem;
+            height: 2.4rem;
+            border-radius: 5px;
+            &:hover {
+                cursor: pointer;
+                padding: 2px;
+                background-color: beige;
+            }
+        }
+    }
+    .wrapperChat {
+        .messages {
+            height: 20rem;
+            padding: 1rem;
+            overflow-y: scroll;
+            overflow-x: hidden;
+            scrollbar-color: gray white;
+            scrollbar-width: thin;
+    
+            .message {
+                height: fit-content;
+                display: flex;
+                align-items: center;
+                gap: 1rem;
+                font-size: 1.2rem;
+    
+                &:not(:last-child) {
+                    margin-bottom: 1rem;
+                }
+    
+                &.partner {
+                    justify-content: left;
+                }
+    
+                &.me {
+                    justify-content: right;
+                }
+    
+                .logo {
+                    width: 3.2rem;
+                    height: 3.2rem;
+                    border-radius: 50%;
+                }
+    
+                .text {
+                    background-color: var(--theme-beige);
+                    border-radius: 1rem;
+                    padding: 1rem;
+                    max-width: 60%;
+                    overflow-wrap: break-word; /* Разрывает слова, если они не помещаются */
+                    max-width: calc(25 * 1ch);
+                }
+    
+                .time {
+                    font-size: 0.8rem;
+                    color: rgb(82, 82, 82);
+                }
+    
+                @media (max-width: 445px) {
+                    font-size: 0.8rem;
+                }
+            }
+        }
+    }
+
+    .field {
+        height: 5rem;
+        padding: 1rem 2rem 1rem 1rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 10px;
+        input {
+            height: 100%;
+            width: 80%;
+        }
+
+        .actions {
+            display: flex;
+            gap: 10px;
+            img {
+                width: 1.6rem;
+                height: 1.6rem;
+                cursor: pointer;
+            }
+        }
+    }
+}
+
+.room0 {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    height: 30rem;
+}
+
+.room1 {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: 30rem;
+    .advice {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 25rem;
+        width: 100%;
+        text-align: center;
+    }
+    .field {
+        height: 5rem;
+        padding: 1rem 2rem 1rem 1rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 10px;
+        input {
+            height: 100%;
+            width: 80%;
+        }
+
+        .actions {
+            display: flex;
+            gap: 10px;
+            img {
+                width: 1.6rem;
+                height: 1.6rem;
+                cursor: pointer;
+            }
+        }
+    }
+}
+

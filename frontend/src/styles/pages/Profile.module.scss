@@ -1,0 +1,152 @@
+.page {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+    box-shadow: 0 0 5px rgba(0, 0, 0, 0.3);
+    position: relative;
+    padding: 3rem 2rem;
+    &::before {
+        position: absolute;
+        content: "";
+        width: 100%;
+        top: 0;
+        left: 0;
+        height: 4px;
+        background-color: var(--theme-blue);
+        border-radius: 4px 4px 0 0;
+    }
+    .settings {
+        display: grid;
+        grid-template-columns: 1fr 3fr;
+        gap: 2rem;
+        .switchBar {
+            a {
+                position: relative;
+                display: block;
+                width: 100%;
+                height: 5rem;
+                text-decoration: none;
+                color: var(--theme-dark-blue);
+                font-size: 1.2rem;
+                line-height: 3rem;
+                padding: 1rem;
+                font-weight: 400;
+                &:hover {
+                    border-radius: 0.4rem;
+                    background-color: var(--theme-beige);
+                }
+
+                &.general.active,  &.password.active, &.notification.active, &.orders.active, &.backet.active{
+                    font-weight: 700;
+                    &:hover {
+                        background-color: transparent;
+                    }
+                }
+                &::after {
+                    content: "";
+                    position: absolute;
+                    top: 100%;
+                    left: 0;
+                    width: 100%;
+                    height: 1px;
+                    background-color: var(--theme-beige-transparent);
+                }
+            }
+        }
+        .view {
+            display: flex;
+            flex-direction: column;
+            align-items: start;
+            gap: 2rem;
+            padding: 1rem;
+
+            label {
+                font-size: 1.2rem;
+            }
+
+            .logo {
+                display: flex;
+                justify-content: center;
+                flex-direction: column;
+                align-items: center;
+                width: 100%;
+                img.profile {
+                    width: 6.4rem;
+                    height: 6.4rem;
+                }
+                img.royal {
+                    width: 22rem;
+                    height: 6.4rem;
+                }
+            }
+
+            .name, .email, .phone, .location, .password {
+                display: flex;
+                flex-direction: column;
+                gap: 1rem;
+                width: 100%;
+
+                input:not(.phoneInput) {
+                    width: 100%;
+                    font-size: 1.2rem;
+                    padding: 0.5rem;
+                    border: 1px solid var(--theme-blue);
+                    border-radius: 5px;
+                }
+                .phoneInput {
+                    width: 22rem;
+                    font-size: 1.2rem;
+                }
+            }
+            .notifications {
+                display: flex;
+                justify-content: start;
+                gap: 2rem;
+            }
+            .location select {
+                width: 20rem;
+                font-size: 1.2rem;
+                padding: 0.5rem;
+                border: 1px solid var(--theme-blue);
+                border-radius: 5px;
+                appearance: menulist;
+                color: black;
+            }
+        }
+    }
+    .saveChanges {
+        display: flex;
+        justify-content: end;
+        align-items: start;
+        padding-right: 1rem;
+        button {
+            padding: 1rem;
+            color: #ffffff;
+            background-color: var(--theme-blue);
+            border-radius: 5px;
+            font-size: 1.2rem;
+            &:hover {
+                cursor: pointer;
+                background-color: var(--theme-dark-blue);
+            }
+        }
+    }
+
+}
+
+@media(min-width: 128px) and (max-width: 768px) {
+    .page {
+        h2 {
+            font-size: 1.6rem;
+        }
+        .settings {
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+            .view {
+                align-items: start;
+                justify-content: start;
+            }
+        }
+    }
+}
