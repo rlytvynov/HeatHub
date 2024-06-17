@@ -1,7 +1,7 @@
 import { useCallback, useEffect } from 'react';
 import { useForm, SubmitHandler } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
-import { AuthActionType, useAuthContext } from '../../contexts/AuthProvider';
+import { useAuthContext } from '../../contexts/AuthProvider';
 import AuthService from '../../services/auth-services';
 
 import Layout from '../../components/Layout';
@@ -29,24 +29,16 @@ const defaultValues: FormAuthRegisterData = {
 
 function Register(props : Props) {
     const navigate = useNavigate();
-    const {
-        register,
-        handleSubmit,
-        reset,
-        formState: { errors },
-    } = useForm<FormAuthRegisterData>();
+    const {register, handleSubmit, reset, formState: { errors }} = useForm<FormAuthRegisterData>();
     const authContext = useAuthContext()
     const callback: SubmitHandler<FormAuthRegisterData> = useCallback(async (data: FormAuthRegisterData) => {
         try {
             if(data.password !== data.passwordConfirm)
                 throw new Error("Password are not same")
-            authContext!.dispatchAuthState({type: AuthActionType.REGISTER_REQUEST, payload: ""})
             await AuthService.register(data)
-            authContext!.dispatchAuthState({type: AuthActionType.REGISTER_SUCCESS, payload: ""})
             reset(defaultValues)
         } catch (error) {
             alert(error)
-            authContext!.dispatchAuthState({type: AuthActionType.REGISTER_FAILURE, payload: error as string})
         }
         // eslint-disable-next-line
     }, [])
@@ -62,7 +54,7 @@ function Register(props : Props) {
             navigate("/")
         }
         // eslint-disable-next-line
-    }, [])
+    }, [authContext.authState.user])
     return (
         <Layout styleClass={styles.none}>
             <form onKeyDown={(e) => handleSubmitKey(e, callback)} onSubmit={handleSubmit(callback)} className={styles.registerForm}>

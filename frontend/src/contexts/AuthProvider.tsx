@@ -1,103 +1,96 @@
 import { createContext, useContext, useEffect, useReducer } from "react";
-import Loader from "../components/Loader";
 import AuthService from "../services/auth-services";
-import { UserEntity } from "../global";
+import { v4 as uuidv4 } from 'uuid';
+import { models } from "../types/models";
+import authHandler from "../utils/authHandler";
 
 interface AuthState {
-    user: UserEntity.IUser | null;
-    loading: boolean;
+    user: models.UserEntity.Auth.IUser;
+    authorized: boolean;
     error: string | null;
 }
 
 export enum AuthActionType {
-    LOGIN_REQUEST = 'LOGIN_REQUEST',
-    LOGIN_SUCCESS = 'LOGIN_SUCCESS',
-    LOGIN_FAILURE = 'LOGIN_FAILURE',
+    AUTH_SUCCESS = 'LOGIN_SUCCESS',
+    AUTH_FAILURE = 'LOGIN_FAILURE',
 
-    REGISTER_REQUEST = 'LOGOUT_REQUEST',
-    REGISTER_SUCCESS = 'LOGOUT_SUCCESS',
-    REGISTER_FAILURE = 'LOGOUT_FAILURE',
-
-    LOGOUT_REQUEST = 'LOGOUT_REQUEST',
-    LOGOUT_SUCCESS = 'LOGOUT_SUCCESS',
-    LOGOUT_FAILURE = 'LOGOUT_FAILURE',
+    DEAUTH_SUCCESS = 'LOGOUT_SUCCESS',
+    DEAUTH_FAILURE = 'LOGOUT_FAILURE',
 }
 
 type AuthAction = {
     type: AuthActionType,
-    payload: UserEntity.IUser | string
+    payload?: models.UserEntity.Auth.IUser | string
 }
 
 interface AuthContextInterface {
     authState: AuthState
     dispatchAuthState: React.Dispatch<AuthAction>
 }
-const AuthContext = createContext <AuthContextInterface | undefined> (undefined)
+const initialAuthContext: AuthContextInterface = {
+    authState: null as unknown as AuthState,
+    dispatchAuthState: () => null, // Заглушка для dispatch
+};
+const AuthContext = createContext <AuthContextInterface> (initialAuthContext)
 export const useAuthContext = () => useContext(AuthContext);
 
 function authReducer (state: AuthState, action: AuthAction) : AuthState {
     switch (action.type) {
-        case AuthActionType.LOGIN_REQUEST:
-        case AuthActionType.REGISTER_REQUEST:
-        case AuthActionType.LOGOUT_REQUEST:
-            return { ...state, loading: true };
-        case AuthActionType.LOGIN_SUCCESS:
+        case AuthActionType.AUTH_SUCCESS:
+            return { 
+                user: action.payload as models.UserEntity.Auth.IUser, 
+                authorized: true,
+                error: null 
+            }
+        case AuthActionType.AUTH_FAILURE:
             return { 
                 ...state, 
-                loading: false,
-                error: null,
-                user: action.payload as UserEntity.IUser
-            };
-        case AuthActionType.LOGIN_FAILURE:
-            return { ...state, loading: false, error: action.payload as string, user: null };     
-        case AuthActionType.REGISTER_SUCCESS:
-            return { ...state, loading: false, error: null };
-        case AuthActionType.REGISTER_FAILURE:
-            return { ...state, loading: false, error: action.payload as string };
-        case AuthActionType.LOGOUT_SUCCESS:
-            return { ...state, loading: false, error: null, user: null};
-        case AuthActionType.LOGOUT_FAILURE:
+                error: action.payload as string 
+            };     
+        case AuthActionType.DEAUTH_SUCCESS:
+            return { 
+                user: { 
+                    id: localStorage.getItem("default_id") as string, 
+                    role: localStorage.getItem("default_role") as models.UserEntity.Auth.Role 
+                }, 
+                authorized: false,
+                error: null 
+            }
+        case AuthActionType.DEAUTH_FAILURE:
             return { 
                 ...state, 
-                loading: false, 
-                error: "Error while Logout"
-            };
+                error: action.payload as string
+            };  
         default:
           return state;
       }
 }
 
-const initialState = {
-    user: null,
-    loading: false,
-    error: null
-}
-
 export const AuthProvider = ({children} : React.PropsWithChildren) => {
-    const [authState, dispatchAuthState] = useReducer(authReducer, initialState);
+    const [authState, dispatchAuthState] = useReducer(authReducer, null as unknown as AuthState);
 
-    useEffect(() => {
-        async function fetchMe() {
-            try {
-                dispatchAuthState({type: AuthActionType.LOGIN_REQUEST, payload: ''})
-                const user = await AuthService.check()
-                // console.log(user)
-                dispatchAuthState({type: AuthActionType.LOGIN_SUCCESS, payload: user as UserEntity.IUser})
-            } catch (error) {
-                localStorage.removeItem("token")
-                dispatchAuthState({type: AuthActionType.LOGIN_FAILURE, payload: error as string})
-            }
+    async function fetchMe() {
+        try {
+            const user = await AuthService.check()
+            dispatchAuthState({type: AuthActionType.AUTH_SUCCESS, payload: user as models.UserEntity.Auth.IUser})
+        } catch (error: any) {
+            await authHandler(error.message)
+            dispatchAuthState({type: AuthActionType.DEAUTH_SUCCESS})
         }
+    }
+    useEffect(() => {
         fetchMe()
     }, [])
-    // useEffect(() => {
-    //     console.log(authState.user)
-    // }, [authState.user])
 
     return (
-        <AuthContext.Provider value={{authState, dispatchAuthState}}>
-                {authState.loading ? <Loader/> : children}
-        </AuthContext.Provider>
+        <>
+            {
+                authState &&
+                <AuthContext.Provider value={{authState, dispatchAuthState}}>
+                    {children}
+                </AuthContext.Provider>
+            }
+        </>
     );
 }
 

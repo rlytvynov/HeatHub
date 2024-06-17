@@ -1,183 +1,243 @@
-.room {
-    display: flex;
-    background-color: #ffffff;
-    flex-direction: column;
-    justify-content: space-between;
-    height: 30rem;
-    width: 100%;
-    border-radius: 0 0 0.5rem 0.5rem;
-    .header {
-        height: 5rem;
-        border-bottom: 2px solid var(--theme-blue);
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 1rem;
-
-        .logo {
-            position: relative;
-            img {
-                width: 3.2rem;
-                height: 3.2rem;
-                border-radius: 50%;
-            }
-            .online {
-                position: absolute;
-                bottom: 0;
-                right: 0;
-                width: 1.2rem;
-                height: 1.2rem;
-                background-color: aquamarine;
-                border-radius: 50%;
-                border: 2px solid #ffffff;
-            }
-            .offline{
-                position: absolute;
-                bottom: 0;
-                right: 0;
-                width: 1.2rem;
-                height: 1.2rem;
-                background-color:chocolate;
-                border-radius: 50%;
-                border: 2px solid #ffffff;
-            }
-        }
-        .names {
-            .name {
-                width: 120px;
-                font-size: 1.2rem;
-                font-weight: 700;
-                overflow: hidden;
-                white-space: nowrap;
-                text-overflow: ellipsis;
-            }
-        }
-        img#drop {
-            width: 2.4rem;
-            height: 2.4rem;
-            border-radius: 5px;
-            &:hover {
-                cursor: pointer;
-                padding: 2px;
-                background-color: beige;
-            }
-        }
+.chatAdmin {
+    .chatHeader {
+        padding: 0.5rem;
+        text-align: center;
+        font-size: 1.4rem;
+        background-color: var(--theme-blue);
+        border-radius: 0.5rem 0.5rem 0 0;
+        color: white;
     }
-    .wrapperChat {
-        .messages {
-            height: 20rem;
-            padding: 1rem;
+
+    .content {
+        display: flex;
+        border-radius: 1rem;
+        .rooms {
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            width: 100%;
+            height: 30rem;
+            padding: 1rem 0 1rem 1rem;
             overflow-y: scroll;
             overflow-x: hidden;
             scrollbar-color: gray white;
             scrollbar-width: thin;
-    
-            .message {
-                height: fit-content;
+            .room {
+                width: 100%;
+                list-style: none;
                 display: flex;
                 align-items: center;
-                gap: 1rem;
-                font-size: 1.2rem;
-    
-                &:not(:last-child) {
-                    margin-bottom: 1rem;
+                gap: 2rem;
+                padding: 1rem;
+                border-radius: 1rem;
+                &:hover {
+                    background-color: rgb(206, 206, 206);
+                    cursor: pointer;
                 }
-    
-                &.partner {
-                    justify-content: left;
+                .userImage {
+                    position: relative;
+                    img  {
+                        width: 3.2rem;
+                        height: 3.2rem;
+                    }
+                    .online, .offline {
+                        position: absolute;
+                        bottom: 0;
+                        right: 0;
+                        width: 1.2rem;
+                        height: 1.2rem;
+                        border: 2px solid #fff;
+                        border-radius: 50%;
+
+                    }
+                    .online {
+                        background-color: #58c818;
+                    }
+                    .offline {
+                        background-color: #b20000;
+                    }
                 }
-    
-                &.me {
-                    justify-content: right;
+
+                .userData {
+                    display: flex;
+                    flex-direction: column;
+                    gap: .5rem;
                 }
-    
-                .logo {
-                    width: 3.2rem;
-                    height: 3.2rem;
+
+                .newMessage {
+                    margin-left: auto;
+                    background-color: #1890c8;
+                    width: 1rem;
+                    height: 1rem;
                     border-radius: 50%;
                 }
-    
-                .text {
-                    background-color: var(--theme-beige);
-                    border-radius: 1rem;
-                    padding: 1rem;
-                    max-width: 60%;
-                    overflow-wrap: break-word; /* Разрывает слова, если они не помещаются */
-                    max-width: calc(25 * 1ch);
-                }
-    
-                .time {
-                    font-size: 0.8rem;
-                    color: rgb(82, 82, 82);
-                }
-    
-                @media (max-width: 445px) {
-                    font-size: 0.8rem;
-                }
-            }
-        }
-    }
-
-    .field {
-        height: 5rem;
-        padding: 1rem 2rem 1rem 1rem;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        gap: 10px;
-        input {
-            height: 100%;
-            width: 80%;
-        }
-
-        .actions {
-            display: flex;
-            gap: 10px;
-            img {
-                width: 1.6rem;
-                height: 1.6rem;
-                cursor: pointer;
             }
         }
     }
 }
 
-.room0 {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    width: 100%;
-    height: 30rem;
-}
-
-.room1 {
-    display: flex;
-    flex-direction: column;
-    width: 100%;
-    height: 30rem;
-    .advice {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        height: 25rem;
-        width: 100%;
+.chatClient {
+    .chatHeader {
+        padding: 0.5rem;
         text-align: center;
+        font-size: 1.4rem;
+        background-color: var(--theme-blue);
+        border-radius: 0.5rem 0.5rem 0 0;
+        color: white;
+    }
+    .content {
+        display: flex;
+    }
+}
+
+.chatAdmin .content .chat , .chatClient .content .chat {
+    padding: 1rem;
+    width: 100%;
+    .companion {
+        display: flex;
+        flex-direction: row;
+        justify-content: left;
+        gap: 2rem;
+        padding-bottom: 1rem;
+        border-bottom: 1px solid rgb(206, 206, 206);
+        margin-bottom: 1rem;
+        .logo {
+            position: relative;
+            img  {
+                width: 3.2rem;
+                height: 3.2rem;
+                border-radius: 50%;
+            }
+            .online, .offline, .undefined {
+                position: absolute;
+                bottom: 0;
+                right: 0;
+                width: 1.2rem;
+                height: 1.2rem;
+                border: 2px solid #fff;
+                border-radius: 50%;
+
+            }
+            .online {
+                background-color: #58c818;
+            }
+            .offline {
+                background-color: #b20000;
+            }
+            .undefined {
+                background-color: #999999;
+            }
+        }
+        .companionData {
+            display: flex;
+            flex-direction: column;
+            gap: .5rem;
+        }
+
+        .exit {
+            margin-left: auto;
+            display: flex;
+            align-items: center;
+            img {
+                width: 1.8rem;
+                height: 1.8rem;
+            }
+            &:hover {
+                cursor: pointer;
+            }
+        }
+
+        .warning {
+            margin-left: auto;
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            padding: 0.5rem;
+            background-color: #fba95d;
+            color: #fff;
+            border-radius: 0.5rem;
+            gap: 0.5rem;
+            img {
+                width: 1.8rem;
+                height: 1.8rem;
+            }
+            p {
+                font-size: 0.8rem;
+                text-align: center;
+            }
+        }
+    }
+    .messages {
+        height: 30rem;
+        overflow-y: scroll;
+        overflow-x: hidden;
+        scrollbar-color: gray white;
+        scrollbar-width: thin;
+        padding-bottom: 1rem;
+        padding-right: 1rem;
+        .message {
+            height: fit-content;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            font-size: 1.2rem;
+
+            &:not(:last-child) {
+                margin-bottom: 1.4rem;
+            }
+
+            &.partner {
+                justify-content: left;
+            }
+
+            &.me {
+                justify-content: right;
+            }
+
+            .logo {
+                width: 3.2rem;
+                height: 3.2rem;
+                border-radius: 50%;
+            }
+
+            .text {
+                background-color: var(--theme-beige);
+                border-radius: 1rem;
+                padding: 1rem;
+                max-width: 60%;
+                overflow-wrap: break-word; /* Разрывает слова, если они не помещаются */
+                max-width: calc(25 * 1ch);
+            }
+
+            .time {
+                font-size: 0.8rem;
+                color: rgb(82, 82, 82);
+            }
+
+            @media (max-width: 445px) {
+                font-size: 0.8rem;
+            }
+        }
     }
     .field {
         height: 5rem;
-        padding: 1rem 2rem 1rem 1rem;
         display: flex;
         justify-content: space-between;
         align-items: center;
-        gap: 10px;
+        width: 100%;
+        margin-top: 1rem;
+        padding: 0 1rem;
+        border-radius: 1rem;
+        border: 1px solid rgb(206, 206, 206);
         input {
             height: 100%;
-            width: 80%;
+            width: 100%;
+            padding: 0 1rem;
         }
-
         .actions {
             display: flex;
-            gap: 10px;
+            margin-left: auto;
+            gap: 1.5rem;
             img {
                 width: 1.6rem;
                 height: 1.6rem;
@@ -186,4 +246,3 @@
         }
     }
 }
-

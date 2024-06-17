@@ -1,32 +1,23 @@
 import { FormAuthRegisterData } from "../pages/Auth/Register";
-import { UserEntity } from "../global";
+import { models } from "../types/models";
 import UserService from "./user-services";
-
+import fetchData from "./zFetcher";
 
 interface AuthFetchInterface {
-    check: () => Promise<UserEntity.IUser | null>
+    check: () => Promise<models.UserEntity.Auth.IUser>
     register: (data: FormAuthRegisterData) => Promise<void>
-    login: (login: string, password: string) => Promise<{token: string, user: UserEntity.IUser}>
-    logout: () => Promise<null>;
+    login: (login: string, password: string) => Promise<{token: string, user: models.UserEntity.Auth.IUser}>
 }
 
 class AuthServiceClass implements AuthFetchInterface {
-    async check() : Promise<UserEntity.IUser | null> {
+    async check() : Promise<models.UserEntity.Auth.IUser> {
         try {
-            const response = await fetch(`${process.env.REACT_APP_API_URL}/api/auth/me`, {
-                method: "GET",
-                credentials: 'include',
+            const options = {
                 headers: {
-                    'Content-Type': 'application/json',
                     'Authorization': localStorage.getItem("token") || ""
                 }
-            })
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.message);
-            }
-            const user = await response.json()
-            return user
+            };
+            return fetchData<models.UserEntity.Auth.IUser>(`${process.env.REACT_APP_API_URL}/api/auth/me`, options);
         } catch (error) {
             throw error;
         }
@@ -40,50 +31,20 @@ class AuthServiceClass implements AuthFetchInterface {
         }
     }
 
-    async login(email: string, password: string): Promise<{token: string, user: UserEntity.IUser}> {
+    async login(email: string, password: string): Promise<{token: string, user: models.UserEntity.Auth.IUser}> {
         try {
-            const response = await fetch(`${process.env.REACT_APP_API_URL}/api/auth/login`, {
+            const options = {
                 method: 'POST',
-                credentials: 'include',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
                 body: JSON.stringify({
                     email,
                     password
                 })
-            });
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.message);
-            }
-            const {token, user} = await response.json()
-            return {token, user};
+            };
+            const response = await fetchData<{token: string, user: models.UserEntity.Auth.IUser}>(`${process.env.REACT_APP_API_URL}/api/auth/login`, options)
+            return {token: response.token, user: response.user};
+
         } catch (error) {
             console.error('Error during login:', error);
-            throw error;
-        }
-    }
-
-    async logout() {
-        try {
-            const response = await fetch(`${process.env.REACT_APP_API_URL}/api/auth/logout`, {
-                method: 'POST',
-                credentials: 'include',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': localStorage.getItem("token") || ""
-                },
-            });
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.message);
-            };
-            localStorage.removeItem('token')
-            const {message} = await response.json()
-            return message
-        } catch (error) {
-            console.error('Error during logout:', error);
             throw error;
         }
     }

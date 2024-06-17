@@ -1,6 +1,6 @@
 import mongoose from 'mongoose';
 
-export interface IUser extends UserEntity.IUser{
+export interface IUser extends models.server.UserEntity.IUser{
     password: string;
 }
 

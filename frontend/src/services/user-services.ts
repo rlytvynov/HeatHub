@@ -1,61 +1,35 @@
 import { FormAuthRegisterData } from "../pages/Auth/Register";
-import { UserEntity } from "../global";
-
+import { models } from "../types/models";
+import fetchData from "./zFetcher";
 interface UserFetchInterface {
-    getUsers: () => Promise<UserEntity.IUser[]>
+    getUsers: () => Promise<models.UserEntity.Data.IUserData[]>
     createUser: (data: FormAuthRegisterData) => Promise<void>
-    getUserById: (id: string) => Promise<UserEntity.IUser>;
+    getUserById: (id: string) => Promise<models.UserEntity.Data.IUserData>;
     // deleteUserById: (id: string) => Promise<AuthorizedUser[]>;
     // updateUserById: (user: AuthorizedUser, newPassword?: string) => Promise<void>;
 }
 
 
 class UserServiceClass implements UserFetchInterface {
-    async getUsers() {
+    async getUsers() : Promise<models.UserEntity.Data.IUserData[]> {
         try {
-            const response = await fetch(`${process.env.REACT_APP_API_URL}/api/users`, { 
-                method: 'GET',
-                credentials: 'include',
-                headers: {
-                    'Content-Type': 'application/json',
-                } 
-            });
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.message);
-            }
-            const users = await response.json();
-            return users;
+            return fetchData<models.UserEntity.Data.IUserData[]>(`${process.env.REACT_APP_API_URL}/api/users`)
         } catch (error) {
-            console.error('Error fetching users:', error);
             throw error;
         }
     }
 
-    async getUserById(id: string) {
+    async getUserById(id: string) :Promise<models.UserEntity.Data.IUserData> {
         try {
-            const response = await fetch(`${process.env.REACT_APP_API_URL}/api/users/${id}`, { 
-                method: 'GET',
-                credentials: 'include',
-                headers: {
-                    'Content-Type': 'application/json',
-                }, 
-            });
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.message);
-            }
-            const user = await response.json();
-            return user;
+            return fetchData<models.UserEntity.Data.IUserData>(`${process.env.REACT_APP_API_URL}/api/users/${id}`)
         } catch (error) {
-            console.error('Error fetching user:', error);
             throw error;
         }
     }
 
     async createUser(data: FormAuthRegisterData) {
         try {
-            const response = await fetch(`${process.env.REACT_APP_API_URL}/api/auth/register`, { 
+            const options = {
                 method: "POST",
                 body: JSON.stringify({
                     email: data.email,
@@ -63,17 +37,8 @@ class UserServiceClass implements UserFetchInterface {
                     fullName: data.lastName + " " + data.firstName + " " + data.familyName,
                     role: "CUSTOMER"
                 }),
-                credentials: 'include',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-            })
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.message);
             }
-            await response.json()
-            return;
+            return fetchData<void>(`${process.env.REACT_APP_API_URL}/api/auth/register`, options)
         } catch (error) {
             console.error('Error creating user:', error);
             throw error;

@@ -1,69 +1,41 @@
-import { RoomEntity } from "../global";
-
+import { models } from "../types/models"
+import fetchData from "./zFetcher";
 interface ChatFetchInterface {
-    getRoomById: (id: string) => Promise<RoomEntity.IRoom>
-    getMyRoom: () => Promise<RoomEntity.IRoom>
-    getRooms: () => Promise<RoomEntity.IRoom[]>
+    getRoomById: (id: string) => Promise<models.RoomEntity.IRoom>
+    getMyRoom: () => Promise<models.RoomEntity.IRoom>
+    getRooms: () => Promise<models.RoomEntity.IRoom[]>
 }
 
-
 class ChatServiceClass implements ChatFetchInterface {
-    async getRoomById(roomID: string): Promise<RoomEntity.IRoom>{
+    async getRoomById(roomID: string): Promise<models.RoomEntity.IRoom> {
         try {
-            const response = await fetch(`${process.env.REACT_APP_API_URL}/api/chat/rooms/${roomID}`, {
-                method: "GET",
-                credentials: 'include',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-            })
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.message);
-            }
-            const room = await response.json();
-            return room;
+            return fetchData<models.RoomEntity.IRoom>(`${process.env.REACT_APP_API_URL}/api/chat/rooms/${roomID}`);
         } catch (error) {;
             throw error;
         }
     }
 
-    async getMyRoom() {
+    async getMyRoom(): Promise<models.RoomEntity.IRoom> {
         try {
-            const response = await fetch(`${process.env.REACT_APP_API_URL}/api/chat/room`, {
-                method: "GET",
-                credentials: 'include',
+            const options = {
                 headers: {
-                    'Content-Type': 'application/json',
                     'Authorization': localStorage.getItem("token") || ""
-                },
-            })
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.message);
-            }
-            const room = await response.json();
-            return room;
+                }
+            };
+            return fetchData<models.RoomEntity.IRoom>(`${process.env.REACT_APP_API_URL}/api/chat/room`, options);
         } catch (error) {
             throw error;
         }
     }
 
-    async getRooms() {
+    async getRooms(): Promise<models.RoomEntity.IRoom[]> {
         try {
-            const response = await fetch(`${process.env.REACT_APP_API_URL}/api/chat/rooms`, {
-                method: "GET",
-                credentials: 'include',
+            const options = {
                 headers: {
-                    'Content-Type': 'application/json',
-                },
-            })
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.message);
-            }
-            const rooms = await response.json();
-            return rooms;
+                    'Authorization': localStorage.getItem("token") || ""
+                }
+            };
+            return fetchData<models.RoomEntity.IRoom[]>(`${process.env.REACT_APP_API_URL}/api/chat/rooms`, options);
         } catch (error) {
             throw error;
         }
