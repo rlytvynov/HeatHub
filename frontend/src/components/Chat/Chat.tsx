@@ -1,4 +1,4 @@
-import React, {useContext, useEffect, useRef, useState} from 'react';
+import React, {useCallback, useContext, useEffect, useRef, useState} from 'react';
 import styles from "../../styles/components/Chat.module.scss"
 import { useAuthContext } from '../../contexts/AuthProvider';
 import { models } from '../../types/models';
@@ -57,14 +57,22 @@ const Chat = ({roomID, userInitiateRoom, adminLeaveRoom}: Props) => {
                     })
                 }
             } catch (error) {
-                alert("Что-то пошло не так...")
+                alert("Комната не найдена")
             }
         }
         fetchRoom()
 
-        const handleCompanionJoin = () => updateRoomState((prevRoom) => ({...prevRoom, companion: {...prevRoom.companion!, online: true}}))
+        const handleCompanionJoin = () => updateRoomState((prevRoom) => (
+            {
+                ...prevRoom, 
+                room: {
+                    ...prevRoom.room!, 
+                    readByAdmin: authContext.authState.user.role === models.UserEntity.Auth.Role.CUSTOMER ? true : prevRoom.room!.readByAdmin,
+                    readByUser : authContext.authState.user.role === models.UserEntity.Auth.Role.ADMIN ? true : prevRoom.room!.readByUser,
+                }, 
+                companion: {...prevRoom.companion!, online: true}
+            }))
         const handleCompanionDisJoin = () => updateRoomState((prevRoom) => ({...prevRoom, companion: {...prevRoom.companion!, online: false}}))
-        const handleSocketError = (error: any) =>  console.error('Connection Error:', error.message);
         socket.on(`companion-joined-chat-${roomID}`, handleCompanionJoin)
         socket.on(`companion-disjoined-chat-${roomID}`, handleCompanionDisJoin)
         socket.on(`new-message-${roomID}`, handleMessageReceive)
@@ -78,7 +86,6 @@ const Chat = ({roomID, userInitiateRoom, adminLeaveRoom}: Props) => {
         return () => {
             socket.emit('leave-room', roomID, authContext.authState.user)
             window.onbeforeunload = null
-            socket.off('connect_error', handleSocketError);
             socket.off(`new-message-${roomID}`, handleMessageReceive)
             socket.off(`companion-joined-chat-${roomID}`, handleCompanionJoin)
             socket.off(`companion-disjoined-chat-${roomID}`, handleCompanionDisJoin)
@@ -118,6 +125,7 @@ const Chat = ({roomID, userInitiateRoom, adminLeaveRoom}: Props) => {
                                 ...prevRoomState, 
                                 room: { 
                                     ...prevRoomState.room!, 
+                                    [authContext.authState.user.role === models.UserEntity.Auth.Role.ADMIN ? 'readByUser' : 'readByAdmin']: prevRoomState.companion.online ? true : false,
                                     messages: [...prevRoomState.room!.messages, messageObj]
                                 },
                                 message: ""
@@ -155,10 +163,15 @@ const Chat = ({roomID, userInitiateRoom, adminLeaveRoom}: Props) => {
     };
 
     const handleMessageReceive = (messageObj: models.RoomEntity.Message) => {
-        updateRoomState(prevRoom => ({
-            ...prevRoom,
-            room: {...prevRoom.room!, messages: [...prevRoom.room!.messages, messageObj]}
-        }));
+        updateRoomState((prevRoomState) => ({
+            ...prevRoomState, 
+            room: { 
+                ...prevRoomState.room!, 
+                [authContext.authState.user.role === models.UserEntity.Auth.Role.ADMIN ? 'readByUser' : 'readByAdmin']: prevRoomState.companion.online ? true : false,
+                messages: [...prevRoomState.room!.messages, messageObj]
+            },
+            message: ""
+        }))
     };
 
     const handleFileChoose = () => {
@@ -177,10 +190,12 @@ const Chat = ({roomID, userInitiateRoom, adminLeaveRoom}: Props) => {
         }
     }
 
-    const handleExitRoom = () => adminLeaveRoom!((prevState) => ({
-        ...prevState,
-        currentRoom: ""
-    }))
+    const handleExitRoom = () => {
+        adminLeaveRoom!((prevState) => ({
+            ...prevState,
+            currentRoom: ""
+        }))
+    }
 
     return (
         <div className={styles.chat}>
@@ -240,6 +255,14 @@ const Chat = ({roomID, userInitiateRoom, adminLeaveRoom}: Props) => {
                         )
                     })
                 }
+                <div className={styles.read}>
+                    {
+                        authContext.authState.user.role === models.UserEntity.Auth.Role.ADMIN ?
+                        <>{roomState.room?.readByUser && roomState.room!.messages[roomState.room?.messages.length - 1].senderID === authContext.authState.user.id ? "Прочитано" : ""}</>
+                        :
+                        <>{roomState.room?.readByAdmin && roomState.room!.messages[roomState.room?.messages.length - 1].senderID === authContext.authState.user.id ? "Прочитано" : ""}</>
+                    }
+                </div>
             </div>
             <div className={styles.field}>
                 <input

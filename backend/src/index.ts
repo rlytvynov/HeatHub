@@ -116,7 +116,7 @@ const httpServer = http.createServer(server).listen(HTTP_PORT, () => {
     console.log(`Admin Panel started on http://localhost:${HTTP_PORT}${admin.options.rootPath}`)
 });
 
-const io = new Server(httpServer, { 
+export const io = new Server(httpServer, { 
     cors: corsOptions
 });
 export const adminSessions = new Map<string, string>();
@@ -180,8 +180,12 @@ io.on("connection", (socket) => {
         socketController.createRoom(socket, message, callback)
     })
 
-    socket.on("message-send-try", (message: models.client.RoomEntity.Message, callback: (status: {ok: boolean, error: string | null}) => void) => {
+    socket.on('message-send-try', (message: models.client.RoomEntity.Message, callback: (status: {ok: boolean, error: string | null}) => void) => {
         socketController.sendMessageToRoom(socket, message, callback)
+    })
+
+    socket.on('room-read-try', (roomID: string, user: models.client.UserEntity.IUser, callback: (status: {ok: boolean, error: string | null}) => void) => {
+        socketController.readMessageInRoom(socket, roomID, user, callback)
     })
 
 

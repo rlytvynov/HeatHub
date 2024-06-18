@@ -1,4 +1,4 @@
-import { useContext, useEffect, useState } from 'react'
+import { useCallback, useContext, useEffect, useState } from 'react'
 import styles from "../../styles/components/Chat.module.scss"
 import Chat from './Chat'
 import ChatService from '../../services/chat-services'
@@ -47,13 +47,26 @@ export default function ChatAdmin () {
                 rooms: [...prevState.rooms, { id: newRoom.id, ownerID: newRoom.ownerID, readByAdmin: newRoom.readByAdmin }]
             }));
         };
+        const handleNewMessage = (messageObj: models.RoomEntity.Message) => {
+            setRoomsState(prevState => {
+                if(messageObj.roomID !== prevState.currentRoom) {
+                    return {
+                        ...prevState,
+                        rooms: prevState.rooms.map(room => room.id === messageObj.roomID ? {...room, readByAdmin: false} : room)
+                    };
+                }
+                return prevState;
+            });
+        }
 
+        socket.on(`new-message-in-room`, handleNewMessage)
         socket.on('room-created', handleRoomCreated);
         return () => {
             socket.off('room-created', handleRoomCreated);
+            socket.off(`new-message-in-room`, handleNewMessage)
         }
         // eslint-disable-next-line
-    }, [socket])
+    }, [])
 
     return (
         <div className={styles.chatAdmin}>
@@ -86,8 +99,8 @@ type RoomProps = {
 
 function Room ({id, ownerID, readByAdmin, setCurrentRoom} : RoomProps) {
     const socket = useContext(SocketContext)
-    const [isRead, setIsRead] = useState<boolean>(readByAdmin)
     const [userHolder, setUserHolder] = useState<{name: string, email: string, online: boolean} | null> (null)
+    const authContext = useAuthContext()
 
     useEffect(() => {
         async function fetchOwnerAndRoomState(ownerID: string) {
@@ -116,30 +129,38 @@ function Room ({id, ownerID, readByAdmin, setCurrentRoom} : RoomProps) {
         }
         fetchOwnerAndRoomState(ownerID)
 
-        const handleNewMessage = () => setIsRead(false)
         const handleDisconnection = () => setUserHolder((prevUser) => ({...prevUser!, online: false}))
         const handleConnection = () => setUserHolder((prevUser) => ({...prevUser!, online: true}))
 
-
         socket.on(`user-joined-chat-${id}`, handleConnection)
         socket.on(`user-disjoined-chat-${id}`, handleDisconnection)
-        socket.on(`new-message-in-room${id}`, handleNewMessage)
         return () => {
-            socket.off(`new-message-in-room${id}`, handleNewMessage)
             socket.off(`user-disjoined-chat-${id}`, handleDisconnection)
             socket.off(`user-joined-chat-${id}`, handleConnection)
         }
-    }, [id])
+    }, [id, readByAdmin])
 
     const handleCurrentRoom = () => {
-        if(!isRead) {
-            setIsRead(true)
-        }
-        setCurrentRoom(prevState => ({
-            ...prevState,
-            currentRoom: id
-        }))
-    }   
+        if(!readByAdmin) {
+            socket.emit('room-read-try', id, authContext.authState.user, (status: {ok: boolean, error: string | null}) => {
+                if(status.ok) {
+                    setCurrentRoom(prevState => ({
+                        ...prevState,
+                        currentRoom: id,
+                        rooms: prevState.rooms.map(room => room.id === id ? {...room, readByAdmin: true} : room)
+                    }))
+                } else {
+                    console.log("Unexpected error occured")
+                }
+            })
+        } else {
+            setCurrentRoom(prevState => ({
+                ...prevState,
+                currentRoom: id,
+                rooms: prevState.rooms.map(room => room.id === id ? {...room, readByAdmin: true} : room)
+            }))
+        }  
+    }
 
     return (
         <li onClick={handleCurrentRoom} className={styles.room}>
@@ -151,7 +172,7 @@ function Room ({id, ownerID, readByAdmin, setCurrentRoom} : RoomProps) {
                 <div className={styles.userName}>{userHolder?userHolder.name:'...'}</div>
                 <div className={styles.userEmail}>{userHolder?userHolder.email:'...'}</div>
             </div>
-            {!isRead && <div className={styles.newMessage}></div>}
+            {!readByAdmin && <div className={styles.newMessage}></div>}
         </li>
     )
 }

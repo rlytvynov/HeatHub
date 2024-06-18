@@ -1,7 +1,7 @@
 import { Socket } from "socket.io"
 import { User } from "../models/user.entity.js"
 import Room from "../models/room.entity.js"
-import {adminSessions} from "../index.js"
+import {io, adminSessions} from "../index.js"
 
 
 const socketController = {
@@ -18,18 +18,34 @@ const socketController = {
                 throw new Error("Room not found")
             }
             room.messages.push(message as models.server.RoomEntity.Message)
-            await room.save()
 
             if(!sender || sender.role === models.server.UserEntity.Role.CUSTOMER) {
-                for(const [key, value] of adminSessions) {
-                    socket.to(value).emit(`new-message-in-room${room.id}`, message)
+                const sockets = await io.in(room.id).fetchSockets()
+                if(sockets.length < 2) {
+                    room.readByAdmin = false
+                } else {
+                    room.readByAdmin = true
                 }
+                room.readByUser = true
+                await room.save()
+                for(const [key, value] of adminSessions) {
+                    socket.to(value).emit(`new-message-in-room`, message)
+                }
+            } else {
+                const sockets = await io.in(room.id).fetchSockets()
+                if(sockets.length < 2) {
+                    room.readByUser = false
+                } else {
+                    room.readByUser = true
+                }
+                room.readByAdmin = true
+                await room.save()
             }
             socket.broadcast.to(room.id).emit(`new-message-${room.id}`, message)
             callback({ok: true, error: null})
         } catch(error) {
             console.log(error)
-            callback({ok: false, error: error as string})
+            callback({ok: false, error: "Error while sending message"})
         }
     },
 
@@ -51,12 +67,23 @@ const socketController = {
             callback({ok: true, roomID: room.id, error: null})
         } catch (error) {
             console.log(error)
-            callback({ok: false, roomID: "", error: error as string})
+            callback({ok: false, roomID: "", error: "Error while creating room"})
         }
     },
 
-    readMessageInRoom: (roomId: string, callback: (status: {ok: boolean, error: string | null}) => void) => {
-
+    readMessageInRoom: async (socket: Socket, roomID: string, user: models.client.UserEntity.IUser, callback: (status: {ok: boolean, error: string | null}) => void) => {
+        try {
+            const room = await Room.findById(roomID).exec()
+            if(!room) {
+                throw new Error("Room not found")
+            }
+            user.role === models.client.UserEntity.Role.ADMIN ? room.readByAdmin = true : room.readByUser = true
+            await room.save()
+            callback({ok: true, error: null})
+        } catch (error) {
+            console.log(error)
+            callback({ok: false, error: "Error while reading room"})
+        }
     }
 
 }
