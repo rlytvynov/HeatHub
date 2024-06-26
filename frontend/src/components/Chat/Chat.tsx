@@ -1,8 +1,10 @@
-import React, {useEffect, useRef, useState} from 'react';
+import React, {useCallback, useContext, useEffect, useRef, useState} from 'react';
 import styles from "../../styles/components/Chat.module.scss"
 import { useAuthContext } from '../../contexts/AuthProvider';
-import { socket } from '../../utils/socket';
-import { RoomEntity } from "../../global";
+import { models } from '../../types/models';
+import ChatService from '../../services/chat-services';
+import { SocketContext } from '../../contexts/SocketProvider';
+import { RoomsInterface } from './ChatAdmin';
 
 function formatTime(hours: number, minutes: number): string {
     const formattedHours = String(hours).padStart(2, '0');
@@ -11,81 +13,170 @@ function formatTime(hours: number, minutes: number): string {
 }
 
 type Props = {
-    room: RoomEntity.IRoom
+    roomID: string | null,
+    userInitiateRoom?: React.Dispatch<React.SetStateAction<string | null>> //client-side
+    adminLeaveRoom?: React.Dispatch<React.SetStateAction<RoomsInterface>> //admin-side
 }
 
-const Chat = ({room}: Props) => {
+interface RoomState {
+    room: models.RoomEntity.IRoom | null, 
+    companion: {name: string, email: string, online: boolean | undefined}
+    message: string
+}
+
+const Chat = ({roomID, userInitiateRoom, adminLeaveRoom}: Props) => {
+    const [roomState, updateRoomState] = useState<RoomState>({
+        room: null,
+        companion: {name: "Администратор", email: "intermobi@yahoo.com", online: undefined},
+        message: ""
+    })
     const authContext = useAuthContext()
+    const socket = useContext(SocketContext)
+
     const messagesBlockRef = useRef<HTMLDivElement>(null);
     const fileUploaderRef = useRef<HTMLInputElement>(null)
-    const [messageText, setMessageText] = useState("")
-    const [currentRoom, setCurrentRoom] = useState<RoomEntity.IRoom>(room);
+    const currentRoomRef = useRef<models.RoomEntity.IRoom | null>(null as unknown as models.RoomEntity.IRoom);
+
+    useEffect(() => {
+        const fetchRoom = async () => {
+            try {
+                if(roomID) {
+                    const room = await ChatService.getRoomById(roomID)
+                    socket.emit("join-room", room.id, authContext.authState.user, (status: {ok: boolean}) => {
+                        if(status.ok) {
+                            socket.emit('get-companion-data', roomID, authContext.authState.user, (status: {ok: boolean}, companion: {name: string, email: string, online: boolean}) => {
+                                if(status.ok) {
+                                    updateRoomState({
+                                        room: room,
+                                        companion: companion,
+                                        message: ""
+                                    })
+                                }
+                            })
+                        }
+                    })
+                }
+            } catch (error) {
+                alert("Комната не найдена")
+            }
+        }
+        fetchRoom()
+
+        const handleCompanionJoin = () => updateRoomState((prevRoom) => (
+            {
+                ...prevRoom, 
+                room: {
+                    ...prevRoom.room!, 
+                    readByAdmin: authContext.authState.user.role === models.UserEntity.Auth.Role.CUSTOMER ? true : prevRoom.room!.readByAdmin,
+                    readByUser : authContext.authState.user.role === models.UserEntity.Auth.Role.ADMIN ? true : prevRoom.room!.readByUser,
+                }, 
+                companion: {...prevRoom.companion!, online: true}
+            }))
+        const handleCompanionDisJoin = () => updateRoomState((prevRoom) => ({...prevRoom, companion: {...prevRoom.companion!, online: false}}))
+        socket.on(`companion-joined-chat-${roomID}`, handleCompanionJoin)
+        socket.on(`companion-disjoined-chat-${roomID}`, handleCompanionDisJoin)
+        socket.on(`new-message-${roomID}`, handleMessageReceive)
+
+        window.onbeforeunload = () => {
+            if(currentRoomRef.current) {
+                socket.emit('leave-room', currentRoomRef.current.id, authContext.authState.user)
+            }
+        }
+
+        return () => {
+            socket.emit('leave-room', roomID, authContext.authState.user)
+            window.onbeforeunload = null
+            socket.off(`new-message-${roomID}`, handleMessageReceive)
+            socket.off(`companion-joined-chat-${roomID}`, handleCompanionJoin)
+            socket.off(`companion-disjoined-chat-${roomID}`, handleCompanionDisJoin)
+        }   
+    }, [roomID, authContext.authState.authorized])
+    useEffect(() => {
+        currentRoomRef.current = roomState.room
+    }, [roomState.room])
+    useEffect(() => {
+        if(messagesBlockRef.current) {
+            messagesBlockRef.current.scrollTop = messagesBlockRef.current.scrollHeight;
+        }
+    }, [roomState.room?.messages.length, roomState.room?.messages.length])
+
+
 
     const handleMessageSet = (event: React.ChangeEvent<HTMLInputElement>) => {
-        setMessageText(event.target.value)
+        updateRoomState((prevRoom) => ({...prevRoom, message: event.target.value}))
     };
 
     const handleMessageSend = async () => {
         try {
-            if(messageText) {
-                const messageObj: RoomEntity.Message = {
-                    roomID: currentRoom._id,
-                    senderID: authContext!.authState.user ? authContext!.authState.user._id : undefined,
+            if(roomState.message) {
+                const messageObj: models.RoomEntity.Message = {
+                    roomID: roomState.room? roomState.room.id : undefined,
+                    senderID: authContext.authState.user.id,
                     content: {
-                        text: messageText,
+                        text: roomState.message,
                         time: formatTime(new Date().getHours(), new Date().getMinutes())
                     }
                 }
-                socket.emit("message-send-try", messageObj, async (status: {ok: boolean, error: string | null}) => {
-                    if (status.ok) {
-                        setCurrentRoom(oldRoom => ({
-                            ...oldRoom,
-                            messages: [...oldRoom.messages, messageObj]
-                        }))
-                        setMessageText("")
-                    } else {
-                        console.error('Failed to send message:', status.error);
-                        setMessageText("")
-                    }
-                })
+
+                if(roomState.room) {
+                    socket.emit("message-send-try", messageObj, async (status: {ok: boolean, error: string | null}) => {
+                        if (status.ok) {
+                            updateRoomState((prevRoomState) => ({
+                                ...prevRoomState, 
+                                room: { 
+                                    ...prevRoomState.room!, 
+                                    [authContext.authState.user.role === models.UserEntity.Auth.Role.ADMIN ? 'readByUser' : 'readByAdmin']: prevRoomState.companion.online ? true : false,
+                                    messages: [...prevRoomState.room!.messages, messageObj]
+                                },
+                                message: ""
+                            }))
+                        } else {
+                            throw new Error(`Failed to send message: ${status.error}`)
+                        }
+                    })
+                } else {
+                    socket.emit("create-room-try", messageObj, async (status: {ok: boolean, roomID: string, error: string | null}) => {
+                        if (status.ok) {
+                            const room = await ChatService.getRoomById(status.roomID)
+                            socket.emit("join-room", room.id, authContext.authState.user, (status: {ok: boolean}) => {
+                                if(status.ok) {
+                                    if(!authContext.authState.authorized) {
+                                        localStorage.setItem("roomID", room.id)
+                                    }
+                                    userInitiateRoom!(room.id)
+                                }
+                            })
+                        } else {
+                            throw new Error(`Failed to send message: ${status.error}`)
+                        }
+                    })
+                }
             }
         } catch (error) {
             console.log(error)
         }
     }
-    
-    useEffect(() => {
-        const handleMessageReceive = (messageObj: RoomEntity.Message) => {
-            if(messageObj.roomID === room._id) {
-                setCurrentRoom(oldRoom => ({
-                    ...oldRoom,
-                    messages: [...oldRoom.messages, messageObj]
-                }));
-            }   
-        };
-
-        socket.on("message-receive", handleMessageReceive)
-        return () => {
-            socket.off("message-receive", handleMessageReceive)
-        }
-    }, [room])
-
-    useEffect(() => {
-        if(messagesBlockRef.current) {
-            messagesBlockRef.current.scrollTop = messagesBlockRef.current.scrollHeight;
-        }
-    }, [room.messages.length, currentRoom.messages.length])
-
     const handleMessageSendOnKey = (event: React.KeyboardEvent) => {
         if (event.key === 'Enter') {
             handleMessageSend();
         }
     };
 
+    const handleMessageReceive = (messageObj: models.RoomEntity.Message) => {
+        updateRoomState((prevRoomState) => ({
+            ...prevRoomState, 
+            room: { 
+                ...prevRoomState.room!, 
+                [authContext.authState.user.role === models.UserEntity.Auth.Role.ADMIN ? 'readByUser' : 'readByAdmin']: prevRoomState.companion.online ? true : false,
+                messages: [...prevRoomState.room!.messages, messageObj]
+            },
+            message: ""
+        }))
+    };
+
     const handleFileChoose = () => {
         fileUploaderRef.current?.click()
     }
-
     const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
         const formData = new FormData();
         if(event.target) {
@@ -99,65 +190,85 @@ const Chat = ({room}: Props) => {
         }
     }
 
+    const handleExitRoom = () => {
+        adminLeaveRoom!((prevState) => ({
+            ...prevState,
+            currentRoom: ""
+        }))
+    }
+
     return (
-        <div className={`${styles.room}`}>
-            <div className={styles.header}>
+        <div className={styles.chat}>
+            <div className={styles.companion}>
                 {
-                    (authContext!.authState.user && authContext!.authState.user.role === "CUSTOMER") || !authContext!.authState.user ?
+                    authContext.authState.user.role === models.UserEntity.Auth.Role.CUSTOMER?
                     <div className={styles.logo}>
                         <img src={process.env.PUBLIC_URL + '/images/logo1.png'} alt="admin-logo"/>
-                        <div className={styles.online}></div>
+                        <span className={typeof roomState.companion?.online === "undefined" ? styles.undefined : (roomState.companion?.online ? styles.online : styles.offline)}></span>
                     </div>
                     :
                     <div className={styles.logo}>
                         <img src={process.env.PUBLIC_URL + '/images/user.png'} alt="admin-logo"/>
-                        <div className={styles.online}></div>
+                        <span className={roomState.companion?.online ? styles.online : styles.offline}></span>
                     </div>
                 }
-                <div className={styles.names}>
-                    <div className={styles.name}>Администратор</div>
-                    <div className={styles.email}>intermobi@yahoo.com</div>
+                <div className={styles.companionData}>
+                    <div className={styles.name}>{roomState.companion?.name}</div>
+                    <div className={styles.email}>{roomState.companion?.email}</div>
                 </div>
-                <img id={styles.drop} src={process.env.PUBLIC_URL + '/images/trash.png'} alt="trash"/>
+                {
+                    authContext.authState.user.role === models.UserEntity.Auth.Role.CUSTOMER && authContext.authState.user.id.includes("-") ? 
+                    <div className={styles.warning}>
+                        <img src={process.env.PUBLIC_URL + '/images/warning.png'} alt="" />
+                        <p>Временный чат</p>
+                    </div> 
+                    :
+                    authContext.authState.user.role === models.UserEntity.Auth.Role.ADMIN && <div className={styles.exit} onClick={handleExitRoom}><img src={process.env.PUBLIC_URL + '/images/exit.png'} alt="" /></div>
+                }
             </div>
-            <div className={styles.wrapperChat}>
-                <div ref={messagesBlockRef} className={`${styles.messages}`}>
-                    {
-                        currentRoom?.messages.map((message: RoomEntity.Message, key: number) => {
-                            return (
-                                (message.senderID === null && !authContext!.authState.user) || message.senderID === authContext!.authState.user!._id?
-                                <div key = {key} className={`${styles.message} ${styles.me}`}>
-                                    <span className={`${styles.time}`}>{message.content.time}</span>
-                                    <span className={`${styles.text}`}>{message.content.text}</span>
-                                    {
-                                        !authContext!.authState.user || authContext!.authState.user.role === "CUSTOMER" ?
-                                        <img src={process.env.PUBLIC_URL + '/images/user.png'} alt="user-logo" className={`${styles.logo}`}/>
-                                        :
-                                        <img src={process.env.PUBLIC_URL + '/images/logo1.png'} alt="admin-logo" className={`${styles.logo}`}/>
-                                    }
-                                </div>
-                                :
-                                <div key = {key} className={`${styles.message} ${styles.other}`}>
-                                    {
-                                        !authContext!.authState.user || authContext!.authState.user.role === "CUSTOMER" ?
-                                        <img src={process.env.PUBLIC_URL + '/images/logo1.png'} alt="admin-logo" className={`${styles.logo}`}/>
-                                        :
-                                        <img src={process.env.PUBLIC_URL + '/images/user.png'} alt="user-logo" className={`${styles.logo}`}/>
-                                    }
+            <div ref={messagesBlockRef} className={styles.messages}>
+                {
+                    roomState?.room?.messages.map((message: models.RoomEntity.Message, key: number) => {
+                        return (
+                            message.senderID === authContext.authState.user.id ?
+                            <div key = {key} className={`${styles.message} ${styles.me}`}>
+                                <span className={`${styles.time}`}>{message.content.time}</span>
+                                <span className={`${styles.text}`}>{message.content.text}</span>
+                                {
+                                    authContext.authState.user.role === models.UserEntity.Auth.Role.CUSTOMER ?
+                                    <img src={process.env.PUBLIC_URL + '/images/user.png'} alt="user-logo" className={`${styles.logo}`}/>
+                                    :
                                     <img src={process.env.PUBLIC_URL + '/images/logo1.png'} alt="admin-logo" className={`${styles.logo}`}/>
-                                    <span className={`${styles.text}`}>{message.content.text}</span>
-                                    <span className={`${styles.time}`}>{message.content.time}</span>
-                                </div>
-                            )
-                        })
+                                }
+                            </div>
+                            :
+                            <div key = {key} className={`${styles.message} ${styles.other}`}>
+                                {
+                                    authContext.authState.user.role === models.UserEntity.Auth.Role.CUSTOMER ?
+                                    <img src={process.env.PUBLIC_URL + '/images/logo1.png'} alt="admin-logo" className={`${styles.logo}`}/>
+                                    :
+                                    <img src={process.env.PUBLIC_URL + '/images/user.png'} alt="user-logo" className={`${styles.logo}`}/>
+                                }
+                                <span className={`${styles.text}`}>{message.content.text}</span>
+                                <span className={`${styles.time}`}>{message.content.time}</span>
+                            </div>
+                        )
+                    })
+                }
+                <div className={styles.read}>
+                    {
+                        authContext.authState.user.role === models.UserEntity.Auth.Role.ADMIN ?
+                        <>{roomState.room?.readByUser && roomState.room!.messages[roomState.room?.messages.length - 1].senderID === authContext.authState.user.id ? "Прочитано" : ""}</>
+                        :
+                        <>{roomState.room?.readByAdmin && roomState.room!.messages[roomState.room?.messages.length - 1].senderID === authContext.authState.user.id ? "Прочитано" : ""}</>
                     }
                 </div>
             </div>
-            <div className={`${styles.field}`}>
+            <div className={styles.field}>
                 <input
                     type="text"
                     placeholder="Введите сообщение..."
-                    value={messageText}
+                    value={roomState?.message}
                     onChange={handleMessageSet}
                     onKeyDown={handleMessageSendOnKey}
                 />

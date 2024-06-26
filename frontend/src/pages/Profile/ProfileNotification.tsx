@@ -14,10 +14,10 @@ const ProfileNotification = ({userData, updateUserData}: ProfileProps) => {
         updateUserData((prevState) => ({
             ...prevState,
             user: {
-                ...prevState.user,
+                ...prevState.user!,
                 notifications: {
-                    ...prevState.user.notifications,
-                    [type]: !prevState.user.notifications[type]
+                    ...prevState.user!.notifications,
+                    [type]: !prevState.user!.notifications[type]
                 }
             }
         }));
@@ -25,19 +25,19 @@ const ProfileNotification = ({userData, updateUserData}: ProfileProps) => {
     return (
         <>
             <div className={styles.notifications}>
-                <input onChange = {(e) => handleCheckChange("notificationOrdersStatus", e)} type="checkbox" id="order-status" checked={userData.user.notifications.notificationOrdersStatus}/>
+                <input onChange = {(e) => handleCheckChange("notificationOrdersStatus", e)} type="checkbox" id="order-status" checked={userData.user!.notifications.notificationOrdersStatus}/>
                 <label htmlFor="order-status">Уведомлять меня о статусе заказов</label>
             </div>
             <div className={styles.notifications}>
-                <input onChange = {(e) => handleCheckChange("notificationCommentsStatus", e)} type="checkbox" id="order-status" checked={userData.user.notifications.notificationCommentsStatus}/>
+                <input onChange = {(e) => handleCheckChange("notificationCommentsStatus", e)} type="checkbox" id="order-status" checked={userData.user!.notifications.notificationCommentsStatus}/>
                 <label htmlFor="order-status">Уведомлять меня об ответах на комментарии</label>
             </div>
             <div className={styles.notifications}>
-                <input onChange = {(e) => handleCheckChange("notificationMessagesFromAdminStatus", e)} type="checkbox" id="order-status" checked={userData.user.notifications.notificationMessagesFromAdminStatus}/>
+                <input onChange = {(e) => handleCheckChange("notificationMessagesFromAdminStatus", e)} type="checkbox" id="order-status" checked={userData.user!.notifications.notificationMessagesFromAdminStatus}/>
                 <label htmlFor="order-status">Уведомлять меня о сообщениях от администратора</label>
             </div>
             <div className={styles.notifications}>
-                <input onChange = {(e) => handleCheckChange("notificationNewItemsStatus", e)} type="checkbox" id="order-status" checked={userData.user.notifications.notificationNewItemsStatus}/>
+                <input onChange = {(e) => handleCheckChange("notificationNewItemsStatus", e)} type="checkbox" id="order-status" checked={userData.user!.notifications.notificationNewItemsStatus}/>
                 <label htmlFor="order-status">Уведомлять меня о новых товарах</label>
             </div>
         </>

@@ -1,65 +1,67 @@
-/**
- * Global namespaces
- */
-import mongoose from "mongoose";
-declare global {
-    interface Identifiable {
-        _id: mongoose.Types.ObjectId;
+export namespace models {
+    export interface Identifiable {
+        id: string
     }
     /** 
-     * Namespace for room-related entities and types
+     * CLIENT Namespace for room-related entities and types
      */ 
-    namespace RoomEntity {
-        type Message = {
-            roomID: string | null,
-            senderID: string | null,
+    export namespace RoomEntity {
+        export type Message = {
+            roomID?: string,
+            senderID: string,
             content: {
                 text: string,
                 time: string
             }
         }
-        
-        interface IRoom extends Identifiable {
-            ownerID: string | null,
+        export interface IRoom extends Identifiable {
+            ownerID: string,
             messages: Message[],
             readByAdmin: boolean,
             readByUser: boolean,
         }
+
     }
+
     /** 
      * Namespace for item-related entities and types
      */ 
-
-    namespace ItemEntity {
-        interface IItem extends Identifiable {
+    export namespace ItemEntity {
+        export interface IItem extends Identifiable {
 
         }
     }
+
     /** 
      * Namespace for order-related entities and types
      */ 
-    namespace OrderEntity {
-        const enum OrderStatus {
+    export namespace OrderEntity {
+        export const enum OrderStatus {
             PROCESSED = "PROCESSED",
             SENDED = "SENDED",
             DELIVERED = "DELIVERED"
         }
 
-        interface IOrder extends Identifiable {
+        export interface IOrder extends Identifiable {
             orderStatus: OrderStatus;
             orderFile: File | null
         }
     }
 
     /** 
-     * Namespace for user-related entities and types
+     * CLIENT Namespace for user-related entities and types
      */ 
-    namespace UserEntity {
-        const enum Role {
-            ADMIN = "ADMIN",
-            CUSTOMER = "CUSTOMER",
+    export namespace UserEntity.Auth {
+        export const enum Role {
+            ADMIN = "admin",
+            CUSTOMER = "customer"
         }
+        export interface IUser extends models.Identifiable {
+            role: Role;
+        }
+    }
 
+    export namespace UserEntity.Data {
         const enum Country {
             RUSSIA = "Россия 🇷🇺",
             BELARUS = "БЕЛАРУСЬ 🇧🇾",
@@ -72,41 +74,24 @@ declare global {
             KYRGYZSTAN = "КИРГИЗСТАН 🇰🇬",
             TAJIKISTAN = "ТАДЖИКИСТАН 🇹🇯"
         }
-
-        const CountryValues: Country[] = [
-            Country.RUSSIA,
-            Country.BELARUS,
-            Country.KAZAKHSTAN,
-            Country.UZBEKISTAN,
-            Country.AZERBAIJAN,
-            Country.TURKMENISTAN,
-            Country.GEORGIA,
-            Country.ARMENIA,
-            Country.KYRGYZSTAN,
-            Country.TAJIKISTAN
-        ];
-
-        type Notification = {
+        
+        export type Notification = {
             notificationOrdersStatus: boolean;
             notificationCommentsStatus: boolean;
             notificationMessagesFromAdminStatus: boolean;
             notificationNewItemsStatus: boolean;
         };
-
-        interface IUser extends Identifiable {
+    
+        export interface IUserData {
             email: string;
             fullName: string;
-            role: Role
-            phoneNumber: string | null;
-            country: Country | null;
-            address: string | null;
-            postCode: number | null;
+            phoneNumber?: string;
+            country?: Country;
+            address?: string;
+            postCode?: number;
             notifications: Notification;
-            orders: OrderEntity.IOrder[];
-            bag: ItemEntity.IItem[];
+            orders?: models.OrderEntity.IOrder[];
+            bag?: models.ItemEntity.IItem[];
         }
     }
-    
 }
-
-export {}

@@ -1,10 +1,16 @@
 import { Request, Response, NextFunction } from "express";
 import jwt, { JwtPayload } from "jsonwebtoken"
-import { v4 as uuidv4 } from 'uuid';
-export function authSocketMiddleware(req: Request, res: Response, next: NextFunction) {
-    const bearerToken = req.headers.authorization;
+import { Socket } from "socket.io";
+
+export function authSocketMiddleware(socket: Socket, next: (err?: any) => void) {
+    const bearerToken = socket.handshake.headers.authorization as string;
     if(!bearerToken) {
-        req.user = null
+        const userID = socket.handshake.query.id as string
+        const userRole = socket.handshake.query.role as models.client.UserEntity.Role
+        socket.user = {  
+            id: socket.handshake.query.id as string, 
+            role: socket.handshake.query.role as models.client.UserEntity.Role
+        } 
         next()
     } else {
         try {
@@ -16,8 +22,10 @@ export function authSocketMiddleware(req: Request, res: Response, next: NextFunc
                 if (error) {
                     throw new Error();
                 }
-                const {iat, exp, ...iUser} = user as JwtPayload
-                req.user = iUser as UserEntity.IUser
+                socket.user = { 
+                    id: (user as models.client.UserEntity.IUser).id,
+                    role: (user as models.client.UserEntity.IUser).role
+                } 
                 next();
             });  
         } catch (error) {

@@ -18,23 +18,18 @@ const defaultValues: FormAuthLoginData = {
 }
 function Login(props: Props) {
     const navigate = useNavigate();
-    const {
-        register,
-        handleSubmit,
-        reset,
-        formState: { errors },
-    } = useForm<FormAuthLoginData>();
+    const {register, handleSubmit, reset, formState: { errors }} = useForm<FormAuthLoginData>();
     const authContext = useAuthContext()
     const callback: SubmitHandler<FormAuthLoginData> = useCallback(async (data: FormAuthLoginData) => {
         try {
             const {password, email} = data
-            authContext?.dispatchAuthState({type: AuthActionType.LOGIN_REQUEST, payload: ""})
             const answer = await AuthService.login(email, password)
             localStorage.setItem("token", answer.token)
-            authContext!.dispatchAuthState({type: AuthActionType.LOGIN_SUCCESS, payload: answer.user})
+            authContext.dispatchAuthState({type: AuthActionType.AUTH_SUCCESS, payload: answer.user})
             reset(defaultValues)
         } catch (error) {
-            authContext!.dispatchAuthState({type: AuthActionType.LOGIN_FAILURE, payload: error as string})
+            authContext.dispatchAuthState({type: AuthActionType.AUTH_FAILURE, payload: error as string})
+            console.log(error)
         }
          // eslint-disable-next-line
     }, [])
@@ -45,11 +40,11 @@ function Login(props: Props) {
         }
     }
     useEffect(() => {
-        if(authContext!.authState.user) {
+        if(authContext.authState.authorized) {
             navigate("/")
         }
         // eslint-disable-next-line
-    }, [])
+    }, [authContext.authState.authorized])
 
     return (
         <Layout styleClass={styles.none}>

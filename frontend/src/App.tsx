@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useContext, useEffect } from "react";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 
 import Home from "./pages/Home";
@@ -9,18 +9,9 @@ import NotFound from "./pages/NotFound";
 
 import Footer from "./components/Footer";
 import Header from "./components/Header/Header";
-
-import { useSocketContext } from "./contexts/SocketProvider";
+import { SocketContext } from "./contexts/SocketProvider";
 
 function App() {
-    const socketContext = useSocketContext()
-    useEffect(() => {
-        socketContext!.socket.connect()
-        return () => {
-            socketContext!.socket.disconnect()
-        }
-        // eslint-disable-next-line
-    }, [socketContext!.socket])
     return (
         <BrowserRouter>
             <Header/>

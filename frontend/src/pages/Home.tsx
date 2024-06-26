@@ -8,6 +8,8 @@ import ChatClient from "../components/Chat/ChatClient";
 
 import styles from "../styles/pages/Home.module.scss"
 
+import { models } from "../types/models";
+
 const images = [
     { url: `${process.env.PUBLIC_URL}/images/invertor.jpeg` },
 ];
@@ -43,13 +45,10 @@ const Home = () => {
                 <div className={styles.main}>
                     <div className={styles.chat}>
                         {
-                            authContext!.authState.user?
-                            authContext!.authState.user.role === "ADMIN" ?
+                            authContext.authState.authorized && authContext.authState.user.role === models.UserEntity.Auth.Role.ADMIN ?
                                 <ChatAdmin/>
                                 :
                                 <ChatClient/>
-                            :
-                            <ChatClient/>
                         }
                     </div>
                     <div className={styles.popularCategories}>

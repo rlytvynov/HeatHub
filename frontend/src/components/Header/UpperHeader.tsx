@@ -2,8 +2,10 @@ import React, {useCallback, useRef, useState} from 'react';
 import { Link } from "react-router-dom";
 import Layout from '../Layout';
 import { AuthActionType, useAuthContext } from '../../contexts/AuthProvider';
-
 import styles from "../../styles/components/Header.module.scss"
+import authHandler from '../../utils/authHandler';
+import { v4 as uuidv4 } from 'uuid';
+import { models } from '../../types/models';
 
 function UpperHeader() {
     const authContext = useAuthContext()
@@ -12,14 +14,12 @@ function UpperHeader() {
 
     const handleLogout = useCallback(async (e : React.MouseEvent<HTMLAnchorElement, MouseEvent>) => {
         e.preventDefault()
-        console.log(authContext!.authState.user)
         try {
-            // const message = await AuthService.logout()
             localStorage.removeItem('token')
-            authContext!.dispatchAuthState({type: AuthActionType.LOGIN_SUCCESS, payload: ""})
-            setShowLinks(!showLinks);
+            await authHandler(JSON.stringify({id: uuidv4(), role: models.UserEntity.Auth.Role.CUSTOMER}))
+            authContext.dispatchAuthState({ type: AuthActionType.DEAUTH_SUCCESS })
         } catch (error) {
-            authContext!.dispatchAuthState({type: AuthActionType.LOGOUT_FAILURE, payload: error as string})
+            authContext.dispatchAuthState({type: AuthActionType.DEAUTH_FAILURE, payload: error as string})
         }
         // eslint-disable-next-line
     }, [])
@@ -31,7 +31,7 @@ function UpperHeader() {
                 <button className={`${styles.toggleButton}`} onClick={() => setShowLinks(!showLinks)}>Ссылки</button>
                 <div ref={linksRef} className={`${styles.toggleLinks} ${showLinks ? styles.true : styles.false}`}>
                     {
-                        authContext!.authState.user ? 
+                        authContext.authState.authorized ? 
                         <Link onClick={() => setShowLinks(!showLinks)} to="/profile">Моя учетная запись</Link>
                         :
                         <></>
@@ -40,7 +40,7 @@ function UpperHeader() {
                     <Link onClick={() => setShowLinks(!showLinks)} to="/blog">Блог</Link>
                     <Link onClick={() => setShowLinks(!showLinks)} to="/about">О нас</Link>
                     {
-                        authContext!.authState.user ? 
+                        authContext.authState.authorized ? 
                         <Link onClick={handleLogout} to="/">Выйти</Link>
                         :
                         <Link onClick={() => setShowLinks(!showLinks)} to="/login">Войти</Link>
