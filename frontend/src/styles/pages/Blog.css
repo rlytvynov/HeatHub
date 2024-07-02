@@ -1,0 +1,9 @@
+#posts {
+    display: flex;
+    width: 100%;
+}
+
+#posts button {
+    flex: 1;
+    padding: 1rem;
+}

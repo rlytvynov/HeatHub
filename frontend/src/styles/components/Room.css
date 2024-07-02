@@ -1,0 +1,25 @@
+.message-wrapper .message:not(:last-child) {
+    width: 100%;
+    margin-bottom: 1rem;
+}
+.message {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    width: fit-content;
+}
+
+.message.my {
+    margin-left: auto;
+    justify-content: flex-end;
+}
+.message.compmanion {
+    margin-right: auto;
+    justify-content: flex-start;
+}
+
+.message fieldset {
+    margin: 0;
+    max-width: 70%;
+    word-wrap: break-word;
+}

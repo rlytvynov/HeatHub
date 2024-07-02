@@ -1,6 +1,7 @@
 import mongoose from 'mongoose';
+import { iroom } from 'room-server';
 
-export interface IRoom extends models.server.RoomEntity.IRoom {}
+export interface IRoom extends iroom {}
 
 const roomsSchema = new mongoose.Schema<IRoom>({
     ownerID: { type: String, required: true },

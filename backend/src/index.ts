@@ -4,6 +4,7 @@ import mongoose from 'mongoose'
 import AdminJS from 'adminjs'
 import AdminJSExpress from '@adminjs/express'
 import * as AdminJSMongoose from '@adminjs/mongoose'
+import bodyParser from "body-parser"
 import 'dotenv/config'
 import morgan from "morgan"
 import { User } from './models/user.entity.js'
@@ -15,7 +16,12 @@ import authRouter from "./routes/authRouter.js"
 import chatRouter from "./routes/chatRouter.js"
 import userRouter from "./routes/userRouter.js"
 import socketController from "./controllers/socketController.js"
-import Room from "./models/room.entity.js"
+import { iuser, iuserExtend, role } from "user-frontend"
+import { iroom, message } from "room-frontend"
+import itemRouter from "./routes/itemRouter.js"
+import Tubular from "./models/tubular.entity.js"
+import Bps from "./models/bps.entity.js"
+import cartRouter from "./routes/cartRouter.js"
 
 // const HTTPS_PORT = process.env.HTTPS_PORT || 8080
 const HTTP_PORT = process.env.HTTP_PORT || 8000
@@ -23,7 +29,7 @@ const DB_URL = process.env.DB_URL || "test"
 declare global {
     namespace Express {
         interface Request {
-            user: models.client.UserEntity.IUser
+            user: iuser | iuserExtend
         }
     }
 }
@@ -41,7 +47,7 @@ const authenticate = async (email: string, password: string) => {
     if(!user) {
         return null
     }
-    if (user.email === email && await bcrypt.compare(password, user.password) && user.role === models.server.UserEntity.Role.ADMIN) {
+    if (user.email === email && await bcrypt.compare(password, user.password) && user.role === "admin" as role) {
         return Promise.resolve(user.toObject())
     } else {
         return null
@@ -55,7 +61,8 @@ const server = express()
 const admin = new AdminJS({
     resources: [
         {resource: User},
-        {resource: Room}
+        {resource: Tubular},
+        {resource: Bps}
     ],
     locale: { 
         language: 'ru', // default language of application (also fallback)
@@ -99,16 +106,32 @@ const adminRouter = AdminJSExpress.buildAuthenticatedRouter(
         secret: 'sessionsecret',
     },
 );
-
-server.use(cors(corsOptions));
-// server.use(morgan("dev"));
-server.use(express.json());
-server.use(express.urlencoded({ extended: true }));
-
+export const adminSessions = new Map<string, string>();
+export const userSessions = new Map<string, string>();
 server.use(admin.options.rootPath, adminRouter)
+// server.use(morgan("dev"));
+server.use(cors(corsOptions));
+server.use(bodyParser.urlencoded({ extended: true }));
+server.use(bodyParser.json())
+server.use('/api/cart', cartRouter)
 server.use('/api/auth', authRouter)
 server.use('/api/chat', chatRouter)
 server.use('/api/users', userRouter)
+server.use('/api/items', itemRouter)
+server.get('/api/online', (req: express.Request, res: express.Response) => {
+    let users: string[] = []
+    if(req.query.type === 'users') {
+        for(const [key, value] of userSessions) {
+            users.push(key)
+        }
+        return res.status(200).json({users})
+    } else {
+        for(const [key, value] of adminSessions) {
+            users.push(key)
+        }
+        return res.status(200).json({admins: users})
+    }
+})
 
 
 const httpServer = http.createServer(server).listen(HTTP_PORT, () => {
@@ -119,97 +142,115 @@ const httpServer = http.createServer(server).listen(HTTP_PORT, () => {
 export const io = new Server(httpServer, { 
     cors: corsOptions
 });
-export const adminSessions = new Map<string, string>();
-export const userSessions = new Map<string, string>();
 io.use(authSocketMiddleware);
 io.on("connection", (socket) => {
-    socket.user.role === models.client.UserEntity.Role.ADMIN ?
+    console.log('User connected:', socket.user.id)
+    for(const [key, value] of userSessions) {
+        socket.to(value).emit('user-connected', socket.user)
+    }
+    for(const [key, value] of adminSessions) {
+        socket.to(value).emit('user-connected', socket.user)
+    }
+    socket.user.role === 'admin' ? 
         adminSessions.set(socket.user.id, socket.id)
         :
         userSessions.set(socket.user.id, socket.id)
 
-    console.log('User connected:', socket.user.id)
-
-    socket.on('join-room', (roomID: string, user: models.client.UserEntity.IUser, callback: (status: {ok: boolean}) => void) => {
+    socket.on('join-room', (roomID: string, user: iuser) => {
         try {
             socket.join(roomID)
-            socket.broadcast.to(roomID).emit(`companion-joined-chat-${roomID}`)
-            if(user.role === models.client.UserEntity.Role.CUSTOMER) {
-                for(let adminSession of adminSessions) {
-                    socket.to(adminSession[1]).emit(`user-joined-chat-${roomID}`, roomID)
-                }
-            }
-            callback({ok: true})
-        } catch (error) {
-            callback({ok: false})
+            // socket.broadcast.to(roomID).emit(`companion-joined-chat-${roomID}`)
+            // if(user.role === 'customer' as role) {
+            //     for(let adminSession of adminSessions) {
+            //         socket.to(adminSession[1]).emit(`user-joined-chat-${roomID}`, roomID)
+            //     }
+            // }
+        } catch (error: any) {
+            console.log(error.message)
         }
     })
-
-    socket.on('get-room-users-online', async (roomID: string, callback: (status: {online: number}) => void) => {
-        const sockets = await io.in(roomID).fetchSockets();
-        callback({online: sockets.length});
-    })
-
-    socket.on('get-companion-data', async (roomID: string, requestUser: models.client.UserEntity.IUser, callback:  (status: {ok: boolean}, companion: {name: string, email: string, online: boolean} | null) => void) => {
-        try {
-            const room = await Room.findById(roomID).exec()
-            const sockets = await io.in(roomID).fetchSockets();
-            let name: string = '', email: string = '';
-            if(requestUser.role === models.client.UserEntity.Role.ADMIN) {
-                try {
-                    const user = await User.findById(room!.ownerID).exec()
-                    name = user!.fullName
-                    email = user!.email
-                } catch (error) {
-                    name = "Анонимный пользователь"
-                    email = "noemail@example.com"
-                }
-            } else {
-                name = "Администратор"
-                email = "intermobi@yahoo.com"
-            }
-            callback({ok: true}, {name, email, online: sockets.length > 1});
-        } catch (error) {
-            callback({ok: false}, null);
-        }
-    })
-
-
-
-    socket.on('create-room-try', (message: models.client.RoomEntity.Message, callback: (status: {ok: boolean, roomID: string, error: string | null}) => void) => {
-        socketController.createRoom(socket, message, callback)
-    })
-
-    socket.on('message-send-try', (message: models.client.RoomEntity.Message, callback: (status: {ok: boolean, error: string | null}) => void) => {
+    socket.on('send-message', (message: message, callback: (room:iroom ) => void) => {
         socketController.sendMessageToRoom(socket, message, callback)
     })
-
-    socket.on('room-read-try', (roomID: string, user: models.client.UserEntity.IUser, callback: (status: {ok: boolean, error: string | null}) => void) => {
-        socketController.readMessageInRoom(socket, roomID, user, callback)
-    })
-
-
-
-    socket.on('leave-room', (roomID: string, user: models.client.UserEntity.IUser) => {
+    socket.on('leave-room', (roomID: string, user: iuser) => {
         try {
             socket.leave(roomID)
-            socket.broadcast.to(roomID).emit(`companion-disjoined-chat-${roomID}`)
-            if(user.role === models.client.UserEntity.Role.CUSTOMER) {
-                for(let adminSession of adminSessions) {
-                    socket.to(adminSession[1]).emit(`user-disjoined-chat-${roomID}`, roomID)
-                }
-            }
+            // socket.broadcast.to(roomID).emit(`companion-disjoined-chat-${roomID}`)
+            // if(user.role === 'customer' as role) {
+            //     for(let adminSession of adminSessions) {
+            //         socket.to(adminSession[1]).emit(`user-disjoined-chat-${roomID}`, roomID)
+            //     }
+            // }
 
         } catch (error) {
             console.error(`Error occured: ${error}`)
         }
     })
-
     socket.on('disconnect', () => {
-        socket.user.role === models.client.UserEntity.Role.ADMIN ?
+        console.log('User disconnected:', socket.user.id);
+        socket.user.role === 'admin' ? 
             adminSessions.delete(socket.user.id)
             :
             userSessions.delete(socket.user.id)
-        console.log('User disconnected:', socket.user.id);
+        for(const [key, value] of userSessions) {
+            socket.to(value).emit('user-disconnected', socket.user)
+        }
+        for(const [key, value] of adminSessions) {
+            socket.to(value).emit('user-disconnected', socket.user)
+        }
     });
+
+    // socket.on('get-room-users-online', async (roomID: string, callback: (status: {online: number}) => void) => {
+    //     const sockets = await io.in(roomID).fetchSockets();
+    //     callback({online: sockets.length});
+    // })
+
+    // socket.on('get-companion-data', async (roomID: string, requestUser: iuser, callback:  (status: {ok: boolean}, companion: {name: string, email: string, online: boolean} | null) => void) => {
+    //     try {
+    //         const room = await Room.findById(roomID).exec()
+    //         const sockets = await io.in(roomID).fetchSockets();
+    //         let name: string = '', email: string = '';
+    //         if(requestUser.role === 'admin' as role) {
+    //             try {
+    //                 const user = await User.findById(room!.ownerID).exec()
+    //                 name = user!.fullName
+    //                 email = user!.email
+    //             } catch (error) {
+    //                 name = "Anonim user"
+    //                 email = "noemail@example.com"
+    //             }
+    //         } else {
+    //             name = "Anonim user"
+    //             email = "intermobi@yahoo.com"
+    //         }
+    //         callback({ok: true}, {name, email, online: sockets.length > 1});
+    //     } catch (error) {
+    //         callback({ok: false}, null);
+    //     }
+    // })
+
+
+
+    // socket.on('create-room-try', (message: message, callback: (status: {ok: boolean, roomID: string, error: string | null}) => void) => {
+    //     socketController.createRoom(socket, message, callback)
+    // })
+
+    // socket.on('room-read-try', (roomID: string, user: models.client.UserEntity.IUser, callback: (status: {ok: boolean, error: string | null}) => void) => {
+    //     socketController.readMessageInRoom(socket, roomID, user, callback)
+    // })
+
+    // socket.on('leave-room', (roomID: string, user: iuser) => {
+    //     try {
+    //         socket.leave(roomID)
+    //         socket.broadcast.to(roomID).emit(`companion-disjoined-chat-${roomID}`)
+    //         if(user.role === 'customer' as role) {
+    //             for(let adminSession of adminSessions) {
+    //                 socket.to(adminSession[1]).emit(`user-disjoined-chat-${roomID}`, roomID)
+    //             }
+    //         }
+
+    //     } catch (error) {
+    //         console.error(`Error occured: ${error}`)
+    //     }
+    // })
 });

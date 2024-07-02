@@ -1,5 +1,6 @@
 import { Request, Response } from "express"
 import { User } from "../models/user.entity.js";
+import { role } from "user-frontend";
 
 const userController = {
     getAllUsers: async function (req: Request, res: Response) {
@@ -43,7 +44,7 @@ const userController = {
             if(!userUpdater) {
                 return res.status(500).json({message: "Something went wrong..."})
             }
-            if(userUpdater.role !== models.server.UserEntity.Role.ADMIN && userToUpdate.id !== userUpdater.id) {
+            if(userUpdater.role !== "admin" as role && userToUpdate.id !== userUpdater.id) {
                 return res.status(403).json({message: "Forbidden"})
             }
             try {

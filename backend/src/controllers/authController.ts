@@ -20,9 +20,9 @@ const authController = {
                 return res.status(401).json({ message: "Invalid email or password" })
             }
 
-            const {_id, role, ...userObj} = candidate.toObject()
-            const token = `Bearer ${jwt.sign({id: _id.toString(), role}, process.env.JWT_SECRET_KEY || "secret", { expiresIn: "24h" })}`;
-            res.status(200).json({ token, user: {id: _id.toString(), role}});
+            const {_id, password, ...userObj} = candidate.toObject()
+            const token = `Bearer ${jwt.sign({id: _id.toString(), ...userObj}, process.env.JWT_SECRET_KEY || "secret", { expiresIn: "24h" })}`;
+            res.status(200).json({ token, user: {id: _id.toString(), ...userObj}});
         } catch (error) {
             console.log(error)
             res.status(500).json({message: "Intenal server error while login"})

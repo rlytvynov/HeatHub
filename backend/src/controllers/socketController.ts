@@ -1,83 +1,109 @@
 import { Socket } from "socket.io"
-import { User } from "../models/user.entity.js"
 import Room from "../models/room.entity.js"
-import {io, adminSessions} from "../index.js"
+import {io, adminSessions, userSessions} from "../index.js"
+import { iroom, message, message as messageFrontend } from "room-frontend"
+import { message as messageBackend } from "room-server"
+import { iuser, role } from "user-frontend"
 
 
 const socketController = {
-    sendMessageToRoom: async (socket: Socket, message: models.client.RoomEntity.Message, callback: (status: {ok: boolean, error: string | null}) => void) => {
+    sendMessageToRoom: async (socket: Socket, message: messageFrontend, callback: (room:iroom ) => void ) => {
         try {
-            const room = await Room.findById(message.roomID).exec()
-            let sender = null;
-            try {
-                sender = await User.findById(message.senderID)
-            } catch (error) {
-                
-            }
-            if(!room) {
-                throw new Error("Room not found")
-            }
-            room.messages.push(message as models.server.RoomEntity.Message)
-
-            if(!sender || sender.role === models.server.UserEntity.Role.CUSTOMER) {
-                const sockets = await io.in(room.id).fetchSockets()
-                if(sockets.length < 2) {
-                    room.readByAdmin = false
-                } else {
-                    room.readByAdmin = true
+            let room
+            if(!message.roomID) {
+                room = new Room({
+                    ownerID: message.senderID,
+                    messages: [],
+                    readByUser: true,
+                    readByAdmin: false
+                })
+                message.roomID = room.id
+            } else {
+                try {
+                    room = await Room.findById(message.roomID).exec()
+                } catch (error) {
+                    throw new Error("Something went wrong...")
                 }
-                room.readByUser = true
-                await room.save()
-                for(const [key, value] of adminSessions) {
-                    socket.to(value).emit(`new-message-in-room`, message)
+            }
+            room!.messages.push(message as messageBackend)
+            await room!.save()
+            if(socket.user.role === "customer") {
+                room!.readByUser = true
+                const sockets = await io.in(room!.id).fetchSockets()
+                if(sockets.length < 2) {
+                    room!.readByAdmin = false
+                    await room!.save()
+                    const {_id, ...roomObj} = room!.toObject()
+                    for(const [key, value] of adminSessions) {
+                        socket.to(value).emit(`new-room-message`, {id: _id.toString(), ...roomObj})
+                    }
+                    console.log("Admin outside the room")
+                    callback({id: _id.toString(), ...roomObj})
+                } else {
+                    room!.readByAdmin = true
+                    await room!.save()
+                    const {_id, ...roomObj} = room!.toObject()
+                    socket.broadcast.to(room!.id).emit(`new-message`,  {id: _id.toString(), ...roomObj})
+                    console.log("Admin in room")
+                    callback({id: _id.toString(), ...roomObj})
                 }
             } else {
-                const sockets = await io.in(room.id).fetchSockets()
+                room!.readByAdmin = true
+                const sockets = await io.in(room!.id).fetchSockets()
                 if(sockets.length < 2) {
-                    room.readByUser = false
+                    room!.readByUser = false
+                    await room!.save()
+                    const {_id, ...roomObj} = room!.toObject()
+                    console.log("User outside the room")
+                    for(const [key, value] of userSessions) {
+                        if(key === room!.ownerID) {
+                            socket.to(value).emit(`new-room-message`,  {id: _id.toString(), ...roomObj})
+                        }
+                    }
+                    callback({id: _id.toString(), ...roomObj})
                 } else {
-                    room.readByUser = true
+                    room!.readByUser = true
+                    await room!.save()
+                    const {_id, ...roomObj} = room!.toObject()
+                    socket.broadcast.to(room!.id).emit(`new-message`,  {id: _id.toString(), ...roomObj})
+                    console.log("User in the room")
+                    callback({id: _id.toString(), ...roomObj})
                 }
-                room.readByAdmin = true
-                await room.save()
             }
-            socket.broadcast.to(room.id).emit(`new-message-${room.id}`, message)
-            callback({ok: true, error: null})
         } catch(error) {
             console.log(error)
-            callback({ok: false, error: "Error while sending message"})
         }
     },
 
-    createRoom: async (socket: Socket, message: models.client.RoomEntity.Message, callback: (status: {ok: boolean, roomID: string, error: string | null}) => void) => {
-        try {
-            const room = new Room({
-                ownerID: message.senderID,
-                messages: [],
-                readByUser: true,
-                readByAdmin: false
-            })
-            message.roomID = room.id
-            room.messages.push(message as models.server.RoomEntity.Message)
-            await room.save()
-            const {_id, ...roomObject} = room.toObject()
-            for(const [key, value] of adminSessions) {
-                socket.to(value).emit("room-created", {id: room.id, ...roomObject})
-            }
-            callback({ok: true, roomID: room.id, error: null})
-        } catch (error) {
-            console.log(error)
-            callback({ok: false, roomID: "", error: "Error while creating room"})
-        }
-    },
+    // createRoom: async (socket: Socket, message: message, callback: (status: {ok: boolean, roomID: string, error: string | null}) => void) => {
+    //     try {
+    //         const room = new Room({
+    //             ownerID: message.senderID,
+    //             messages: [],
+    //             readByUser: true,
+    //             readByAdmin: false
+    //         })
+    //         message.roomID = room.id
+    //         room.messages.push(message as messageBackend)
+    //         await room.save()
+    //         const {_id, ...roomObject} = room.toObject()
+    //         for(const [key, value] of adminSessions) {
+    //             socket.to(value).emit("room-created", {id: room.id, ...roomObject})
+    //         }
+    //         callback({ok: true, roomID: room.id, error: null})
+    //     } catch (error) {
+    //         console.log(error)
+    //         callback({ok: false, roomID: "", error: "Error while creating room"})
+    //     }
+    // },
 
-    readMessageInRoom: async (socket: Socket, roomID: string, user: models.client.UserEntity.IUser, callback: (status: {ok: boolean, error: string | null}) => void) => {
+    readMessageInRoom: async (socket: Socket, roomID: string, user: iuser, callback: (status: {ok: boolean, error: string | null}) => void) => {
         try {
             const room = await Room.findById(roomID).exec()
             if(!room) {
                 throw new Error("Room not found")
             }
-            user.role === models.client.UserEntity.Role.ADMIN ? room.readByAdmin = true : room.readByUser = true
+            user.role === "admin" ? room.readByAdmin = true : room.readByUser = true
             await room.save()
             callback({ok: true, error: null})
         } catch (error) {

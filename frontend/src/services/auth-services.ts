@@ -1,23 +1,23 @@
-import { FormAuthRegisterData } from "../pages/Auth/Register";
-import { models } from "../types/models";
+import { FormAuthRegisterData } from "../components/Navbar/Auth/Register";
+import { iuserExtend } from "user";
+import fetchData from "../utils/fetcher";
 import UserService from "./user-services";
-import fetchData from "./zFetcher";
 
 interface AuthFetchInterface {
-    check: () => Promise<models.UserEntity.Auth.IUser>
+    check: () => Promise<iuserExtend>
     register: (data: FormAuthRegisterData) => Promise<void>
-    login: (login: string, password: string) => Promise<{token: string, user: models.UserEntity.Auth.IUser}>
+    login: (login: string, password: string) => Promise<{token: string, user: iuserExtend}>
 }
 
 class AuthServiceClass implements AuthFetchInterface {
-    async check() : Promise<models.UserEntity.Auth.IUser> {
+    async check() : Promise<iuserExtend> {
         try {
             const options = {
                 headers: {
                     'Authorization': localStorage.getItem("token") || ""
                 }
             };
-            return fetchData<models.UserEntity.Auth.IUser>(`${process.env.REACT_APP_API_URL}/api/auth/me`, options);
+            return await fetchData<iuserExtend>(`${process.env.REACT_APP_API_URL}/api/auth/me`, options);
         } catch (error) {
             throw error;
         }
@@ -31,7 +31,7 @@ class AuthServiceClass implements AuthFetchInterface {
         }
     }
 
-    async login(email: string, password: string): Promise<{token: string, user: models.UserEntity.Auth.IUser}> {
+    async login(email: string, password: string): Promise<{token: string, user: iuserExtend}> {
         try {
             const options = {
                 method: 'POST',
@@ -40,7 +40,7 @@ class AuthServiceClass implements AuthFetchInterface {
                     password
                 })
             };
-            const response = await fetchData<{token: string, user: models.UserEntity.Auth.IUser}>(`${process.env.REACT_APP_API_URL}/api/auth/login`, options)
+            const response = await fetchData<{token: string, user: iuserExtend}>(`${process.env.REACT_APP_API_URL}/api/auth/login`, options)
             return {token: response.token, user: response.user};
 
         } catch (error) {

@@ -1,178 +1,67 @@
-import { useCallback, useContext, useEffect, useState } from 'react'
-import styles from "../../styles/components/Chat.module.scss"
-import Chat from './Chat'
-import ChatService from '../../services/chat-services'
-import { models } from '../../types/models'
+import React, { SetStateAction, useEffect, useState, useSyncExternalStore } from 'react'
+import Room from './Room'
+import { iuserExtend } from 'user'
 import UserService from '../../services/user-services'
-import { SocketContext } from '../../contexts/SocketProvider'
-import authHandler from '../../utils/authHandler'
-import { AuthActionType, useAuthContext } from '../../contexts/AuthProvider'
+import { adminRoomsStore } from '../../data/rooms/adminRoomsStore'
+import { userSessionsStore } from '../../data/sessions/userSessionsStore'
+import { iroom } from 'room'
 
-export interface RoomsInterface {
-    rooms: {id: string, ownerID: string, readByAdmin: boolean}[],
-    currentRoom: string
-}
+type Props = {}
 
-export default function ChatAdmin () {
-    const authContext = useAuthContext()
-    const socket = useContext(SocketContext)
-    const [roomsState, setRoomsState] = useState<RoomsInterface>({
-        rooms: [],
-        currentRoom: ""
-    })
-
+export default function ChatAdmin({}: Props) {
+    const adminRooms = useSyncExternalStore(adminRoomsStore.subscribe.bind(adminRoomsStore), adminRoomsStore.getSnapshot.bind(adminRoomsStore));
+    const [currentRoom, setCurrentRoom] = useState<iroom | null>(null)
     useEffect(() => {
-        async function getRooms() {
-            try {
-                const rooms = await ChatService.getRooms()
-                setRoomsState((prevState) => ({
-                    ...prevState,
-                    rooms: rooms.map(room => ({id: room.id, ownerID: room.ownerID, readByAdmin: room.readByAdmin}))
-                }))  
-            } catch (error: any) {
-                const errorJson = await JSON.parse(error.message)
-                if(errorJson.status === 401) {
-                    await authHandler(error.message)
-                    authContext.dispatchAuthState({type: AuthActionType.DEAUTH_SUCCESS})
-                } else {
-                    alert(errorJson.message)
-                }
-            }
-        } 
-        getRooms()
 
-        const handleRoomCreated = (newRoom: models.RoomEntity.IRoom) => {
-            setRoomsState((prevState) => ({
-                ...prevState, 
-                rooms: [...prevState.rooms, { id: newRoom.id, ownerID: newRoom.ownerID, readByAdmin: newRoom.readByAdmin }]
-            }));
-        };
-        const handleNewMessage = (messageObj: models.RoomEntity.Message) => {
-            setRoomsState(prevState => {
-                if(messageObj.roomID !== prevState.currentRoom) {
-                    return {
-                        ...prevState,
-                        rooms: prevState.rooms.map(room => room.id === messageObj.roomID ? {...room, readByAdmin: false} : room)
-                    };
-                }
-                return prevState;
-            });
-        }
-
-        socket.on(`new-message-in-room`, handleNewMessage)
-        socket.on('room-created', handleRoomCreated);
-        return () => {
-            socket.off('room-created', handleRoomCreated);
-            socket.off(`new-message-in-room`, handleNewMessage)
-        }
-        // eslint-disable-next-line
-    }, [])
-
+    }, [adminRooms])
     return (
-        <div className={styles.chatAdmin}>
-            <div className={styles.chatHeader}>Чат с клиентами</div>
-            <div className={styles.content}>
-                {
-                    roomsState.currentRoom ? 
-                        <Chat roomID={roomsState.currentRoom} adminLeaveRoom={setRoomsState}/> : 
-                        <ul className={styles.rooms}> 
-                            {
-                                roomsState.rooms.map(room => {        
-                                    return (
-                                        <Room  key={room.id} id={room.id} ownerID={room.ownerID} readByAdmin={room.readByAdmin} setCurrentRoom={setRoomsState}/>
-                                    )
-                                })
-                            }
-                        </ul>
-                }
-            </div>
-        </div>
+        <>
+            {!currentRoom && <Rooms setRoom={setCurrentRoom}/>}
+            {currentRoom && 
+                <>
+                    <Room room={currentRoom} setRoom = {setCurrentRoom}/>
+                </>
+            }
+        </>
     )
 }
 
-type RoomProps = {
-    id: string,
-    ownerID: string
-    readByAdmin: boolean,
-    setCurrentRoom: React.Dispatch<React.SetStateAction<RoomsInterface>>
+type RoomsProps = {
+    setRoom: React.Dispatch<SetStateAction<iroom | null>>
 }
 
-function Room ({id, ownerID, readByAdmin, setCurrentRoom} : RoomProps) {
-    const socket = useContext(SocketContext)
-    const [userHolder, setUserHolder] = useState<{name: string, email: string, online: boolean} | null> (null)
-    const authContext = useAuthContext()
-
+function Rooms({ setRoom }: RoomsProps) {
+    const adminRooms = useSyncExternalStore(adminRoomsStore.subscribe.bind(adminRoomsStore), adminRoomsStore.getSnapshot.bind(adminRoomsStore));
+    const userRooms = useSyncExternalStore(userSessionsStore.subscribe.bind(userSessionsStore), userSessionsStore.getSnapshot.bind(userSessionsStore));
     useEffect(() => {
-        async function fetchOwnerAndRoomState(ownerID: string) {
-            try {
-                if(ownerID.includes("-")) {
-                    socket.emit('get-room-users-online', id, (status: {online: number}) => {
-                        if(status.online > 0) {
-                            setUserHolder({name: "Анонимный пользователь", email: 'noemail@example.com', online: true})
-                        } else {
-                            setUserHolder({name: "Анонимный пользователь", email: 'noemail@example.com', online: false})
-                        }
-                    })
-                } else {
-                    const user = await UserService.getUserById(ownerID)
-                    socket.emit('get-room-users-online', id, (status: {online: number}) => {
-                        if(status.online > 0) {
-                            setUserHolder({name: user.fullName, email: user.email, online: true})
-                        } else {
-                            setUserHolder({name: user.fullName, email: user.email, online: false})
-                        }
-                    })
-                }
-            } catch (error) {
-                console.log("Something went wrong")
-            }
+        if(!adminRooms.length) {
+            adminRoomsStore.loadRooms()
         }
-        fetchOwnerAndRoomState(ownerID)
-
-        const handleDisconnection = () => setUserHolder((prevUser) => ({...prevUser!, online: false}))
-        const handleConnection = () => setUserHolder((prevUser) => ({...prevUser!, online: true}))
-
-        socket.on(`user-joined-chat-${id}`, handleConnection)
-        socket.on(`user-disjoined-chat-${id}`, handleDisconnection)
-        return () => {
-            socket.off(`user-disjoined-chat-${id}`, handleDisconnection)
-            socket.off(`user-joined-chat-${id}`, handleConnection)
-        }
-    }, [id, readByAdmin])
-
-    const handleCurrentRoom = () => {
-        if(!readByAdmin) {
-            socket.emit('room-read-try', id, authContext.authState.user, (status: {ok: boolean, error: string | null}) => {
-                if(status.ok) {
-                    setCurrentRoom(prevState => ({
-                        ...prevState,
-                        currentRoom: id,
-                        rooms: prevState.rooms.map(room => room.id === id ? {...room, readByAdmin: true} : room)
-                    }))
-                } else {
-                    console.log("Unexpected error occured")
-                }
-            })
-        } else {
-            setCurrentRoom(prevState => ({
-                ...prevState,
-                currentRoom: id,
-                rooms: prevState.rooms.map(room => room.id === id ? {...room, readByAdmin: true} : room)
-            }))
-        }  
+    }, [adminRooms])
+    const onClick = (room: iroom) => {
+        setRoom(room)
     }
-
     return (
-        <li onClick={handleCurrentRoom} className={styles.room}>
-            <div className={styles.userImage}>
-                <img src={process.env.PUBLIC_URL + "/images/user.png"} alt="" />
-                <span className={userHolder?.online ? styles.online : styles.offline}></span>
+        <div className="window-body">
+            <div className="chat-container">
+            {
+                adminRooms.length !== 0 &&
+                adminRooms.map((room, index) => {
+                    return (
+                        <fieldset key={index} onClick={() => onClick(room)} style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.5rem'}} className="room-card">
+                            <div style={{display: 'flex', flexDirection: 'column', gap: '0.5rem'}} className="holder-data">
+                                <div> {room.id} </div>
+                                <div style={{display: 'flex', gap: '1rem'}}>
+                                    <span>{room.ownerID}</span>
+                                    {userRooms.length !== 0 && userRooms.find((user) => user === room.ownerID) ?  <strong style={{color: 'green'}}> online</strong> : <strong style={{color: 'red'}}> offline</strong> }
+                                </div>
+                            </div>
+                            {!room.readByAdmin && <fieldset style={{width: 'fit-content', padding: '0.5rem', margin: 0}}>new message</fieldset>}
+                        </fieldset>
+                    )
+                })
+            }
             </div>
-            <div className={styles.userData}>
-                <div className={styles.userName}>{userHolder?userHolder.name:'...'}</div>
-                <div className={styles.userEmail}>{userHolder?userHolder.email:'...'}</div>
-            </div>
-            {!readByAdmin && <div className={styles.newMessage}></div>}
-        </li>
+        </div>
     )
 }

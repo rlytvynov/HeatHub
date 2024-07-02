@@ -1,0 +1,99 @@
+html {
+    font-size: 62.5%;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    background-color: rgb(235, 233, 218);
+}
+
+aside#left {
+    width: 35rem;
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    padding: 8px 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+    align-items: center;
+}
+
+main, footer {
+    margin-left: 37rem;
+}
+
+h1 {
+    font-size: 5rem;
+    margin: 1.2rem 0;
+}
+
+h3 {
+    margin: 0;
+    margin-bottom: 1.2rem;
+}
+
+hr {
+    margin: 20px 0;
+    border: none;
+    width: 80%;
+    height: 1px;
+    opacity: 0.5;
+    background: linear-gradient(to right, red 20%, yellow 20%, yellow 36%, green 36%, green 60%, blue 60%, blue 100%);
+}
+
+input {
+    border-radius: 0.2rem !important;
+}
+
+input[type="number"] {
+    height: 2.3rem;
+}
+
+input.error-field {
+    border: 1px solid red;
+}
+
+details summary::-webkit-details-marker,
+details summary::marker {
+ display: none; 
+ content: "";
+}
+
+span.clickable-span:hover {
+    cursor: pointer;
+}
+
+li > a:hover {
+    text-decoration: underline;
+    cursor: pointer;
+}
+.required::after {
+    content:" *";
+    color: red;
+}
+
+a:focus {
+    background-color: transparent !important;
+    color: purple !important;
+    outline: none;
+    border: none !important;
+}
+
+a.active {
+    color: purple !important;
+    font-weight: 700;
+}
+
+button:hover {
+    cursor: pointer;
+}
+
+main .container {
+    display: grid;
+    grid-template-columns: 3fr 1fr;
+    gap: 1rem;
+}

@@ -1,0 +1,72 @@
+.chat-wrapper {
+    width: 100%;
+    height: 52.5rem;
+    display: flex;
+    flex-direction: column;
+}
+
+.chat-wrapper .window-body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 1rem;
+    position: relative;
+}
+
+.chat-wrapper .window-body .bodu {
+    width: 100%;
+    flex: 1rem;
+}
+
+.chat-wrapper .window-body .chat-container {
+    width: 100%;
+    flex: 39rem;
+    /* border: 1px solid #7f9db9; */
+    border-radius: 0.3rem;
+    padding: 1rem;
+
+    overflow-y: scroll; /* Используем auto вместо scroll для предотвращения появления второго скроллбара */
+}
+
+.chat-wrapper .window-body .chat-container .room-card {
+    cursor: pointer;
+}
+.chat-wrapper .window-body .chat-container .room-card:not(:last-child) {
+    margin-bottom: 1rem;
+}
+.chat-wrapper .window-body .chat-container .room-card:last-child {
+    margin-bottom: 0;
+}
+
+.chat-wrapper .window-body .input-message-block {
+    width: 100%;
+    flex: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0 1rem 0 0.5rem;
+    background-color: #fff;
+    border: 1px solid #7f9db9;
+    border-radius: 0.3rem;
+}
+.chat-wrapper .window-body .input-message-block input {
+    width: 100%;
+    height: 3rem;
+    border: none;
+}
+.chat-wrapper .window-body .input-message-block .icons {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+}
+
+.chat-wrapper .window-body .input-message-block .icons img {
+    width: 2rem;
+    height: 2rem;
+    cursor: pointer;
+}
+
+.chat-wrapper .status-bar {
+    margin-top: auto;
+}

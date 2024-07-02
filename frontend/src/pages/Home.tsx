@@ -1,75 +1,84 @@
-import { useAuthContext } from "../contexts/AuthProvider";
+import { useCallback, useState } from "react"
+import { NavLink, Outlet } from "react-router-dom"
+import ModularForm from "../components/Modulars/ModularForm"
 
-import { Carousel } from 'react-responsive-carousel-nugget';
-import "react-responsive-carousel-nugget/lib/styles/carousel.min.css"; // requires a loader
-
-import ChatAdmin from "../components/Chat/ChatAdmin";
-import ChatClient from "../components/Chat/ChatClient";
-
-import styles from "../styles/pages/Home.module.scss"
-
-import { models } from "../types/models";
-
-const images = [
-    { url: `${process.env.PUBLIC_URL}/images/invertor.jpeg` },
-];
-
-const Home = () => {
-    const authContext = useAuthContext()
-    return (
-        <>
-            <div className={styles.home}>
-                <div className={styles.carousel}>
-                    <Carousel 
-                        dynamicHeight = {false} 
-                        showThumbs={false} 
-                        autoPlay infiniteLoop
-                        showStatus={false}
-                        stopOnHover
-                        
-                    >
-                        <div className={styles.carouselItem}>
-                            <img className={styles.carouseli} alt="add"  src={images[0].url} />
-                        </div>
-                        <div className={styles.carouselItem}>
-                            <img className={styles.carouseli} alt="add" src={images[0].url} />
-                        </div>
-                        <div className={styles.carouselItem}>
-                            <img className={styles.carouseli} alt="add" src={images[0].url} />
-                        </div>
-                    </Carousel>
-                </div>
-                <div className={styles.suggestion}>
-                    <h2>Вы можете связаться с адинистратом в чате ниже <br /> если у вас есть есть вопросы или пожелания!</h2>
-                </div>
-                <div className={styles.main}>
-                    <div className={styles.chat}>
-                        {
-                            authContext.authState.authorized && authContext.authState.user.role === models.UserEntity.Auth.Role.ADMIN ?
-                                <ChatAdmin/>
-                                :
-                                <ChatClient/>
-                        }
-                    </div>
-                    <div className={styles.popularCategories}>
-                        <div className={styles.name}>
-                            <h2>Популярные категории</h2>
-                        </div>
-                        <div className={styles.items}>
-                            <div className={styles.item}>Воздушные ТЭНы</div>
-                            <div className={styles.item}>Водяные ТЭНы</div>
-                            <div className={styles.item}>Инверторы</div>
-                            <div className={styles.item}>Терморегуляторы</div>
-                            <div className={styles.item}>Солнечные панели</div>
-                        </div>
-                    </div>
-                </div>
-                <div className={styles.suggestion}>
-                    <h2>Мы на рынке 30 лет!</h2>
-                </div>
-            </div>
-        </>
-    )
+type Props = {}
+function Home({}: Props) {
+    const [modularWindow, setModularWindow] = useState(false)
+    const showModularWindow = () => {
+        setModularWindow(true)
+    }
+    const hideModularWindow = useCallback(() => {
+        setModularWindow(false)
+    }, [])
+  return (
+    <>
+        <div className="container">
+            <Outlet/>
+            <aside id="right" style={{display: "flex", flexDirection: 'column', gap: '10px', width: '100%'}}>
+                <fieldset>
+                    <legend>Worktime</legend>
+                    Пн-Пт / 8:00-13:00 <br />
+                    Сб-Вс / Выходной
+                </fieldset>
+                <fieldset className="location">
+                    <legend>Location</legend>
+                    Россия, Запорожская область, <br />
+                    г. Мелитополь, Образцовый рынок
+                </fieldset>
+                <button style={{height: '60px'}} onClick={showModularWindow}>Recall me</button>
+                <fieldset className="additional-info">
+                    <legend>Additional Information</legend>
+                    <ul className="tree-view" style={{
+                        display: "flex", 
+                        flexDirection: 'column', 
+                        gap: '3px', 
+                        border: 'none',
+                        backgroundColor: 'transparent'
+                    }}>
+                        <li><NavLink to="/about" className={({ isActive, isPending }) => isPending ? "pending" : isActive ? "active" : ""}>About</NavLink></li>
+                        <li><NavLink to="/blog" className={({ isActive, isPending }) => isPending ? "pending" : isActive ? "active" : ""}>Blog</NavLink></li>
+                        <li><NavLink to="/" className={({ isActive, isPending }) => isPending ? "pending" : isActive ? "active" : ""}>Location</NavLink></li>
+                        <li><NavLink to="/payment-instructions" className={({ isActive, isPending }) => isPending ? "pending" : isActive ? "active" : ""}>Payment and delivery</NavLink></li>
+                        <li><span className="clickable-span" onClick={showModularWindow}>Сustom manufacturing</span></li>
+                    </ul>
+                </fieldset>
+                <fieldset>
+                    <legend>Contacts</legend>
+                    <ul className="tree-view" style={{
+                        display: "flex", 
+                        flexDirection: 'column', 
+                        gap: '3px', 
+                        border: 'none',
+                        backgroundColor: 'transparent'
+                    }}>
+                        <li>
+                            <details open>
+                                <summary><span>Phone numbers</span></summary>
+                                <ul>
+                                    <li><span>+79900007009</span></li>
+                                    <li><span>+79900007010</span></li>
+                                    <li><span>+79900007011</span></li>
+                                </ul>
+                            </details>
+                        </li>
+                        <li><a href= "mailto:intermobi@yahoo.com">intermobi@yahoo.com</a></li>
+                        <li><a href="https://t.me/rlytvynov" target="_blank">Telegram</a></li>
+                        <li><a href="viber://chat?number=%2B359893911678" target="_blank">Viber</a></li>
+                        <li><span>OLX</span></li>
+                    </ul>
+                </fieldset>
+            </aside>
+        </div>
+        {   modularWindow && 
+            <ModularForm hideModularWindow={hideModularWindow}>
+                <h4 style={{textAlign: 'center', lineHeight: '2.2rem', marginTop: 0}}>Leave your phone number or another type of contact and our manager will contact you</h4>
+                <input style={{width: '100%'}} type="text" name="" id="" />
+                <button style={{marginTop: '1rem', width: '100%'}} >Request a call</button>
+            </ModularForm>
+        }
+    </>
+  )
 }
 
 export default Home

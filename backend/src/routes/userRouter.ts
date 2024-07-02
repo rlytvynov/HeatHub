@@ -5,7 +5,7 @@ const router = express.Router()
 
 router.get('/', userController.getAllUsers)
 router.get('/:id', userController.getUserById)
-router.patch('/:id', authRESTMiddleware ,userController.updateUserById)
+router.put('/:id', authRESTMiddleware ,userController.updateUserById)
 router.delete('/:id', authRESTMiddleware, userController.deleteUserById)
 
 export default router

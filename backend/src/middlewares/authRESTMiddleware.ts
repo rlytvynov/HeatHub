@@ -1,10 +1,11 @@
 import { Request, Response, NextFunction } from "express";
 import jwt, { JwtPayload } from "jsonwebtoken"
-import { v4 as uuidv4 } from "uuid";
+import { iuserExtend } from "user-frontend";
+
 export function authRESTMiddleware(req: Request, res: Response, next: NextFunction) {
     const bearerToken = req.headers.authorization
     if (!bearerToken || !bearerToken.startsWith('Bearer ')) {
-        return res.status(401).json({ id: uuidv4(), role: models.client.UserEntity.Role.CUSTOMER, message: 'Unauthorized: Invalid token' });
+        return res.status(401).json({ message: 'Unauthorized: Invalid token' });
     }
     const token = bearerToken.split(' ')[1];
     try {
@@ -13,10 +14,11 @@ export function authRESTMiddleware(req: Request, res: Response, next: NextFuncti
                 throw (new Error());
             }
             const {iat, exp, ...iUser} = user as JwtPayload
-            req.user = iUser as models.client.UserEntity.IUser
+            console.log("AAA " + req.body.pipka)
+            req.user = iUser as iuserExtend
             next();
         });
       } catch (error) {
-        return res.status(401).json({ id: uuidv4(), role: models.client.UserEntity.Role.CUSTOMER, message: 'Unauthorized: Invalid token' });
+        return res.status(401).json({message: 'Unauthorized: Invalid token' });
       }
 }

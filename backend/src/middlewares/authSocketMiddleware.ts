@@ -1,15 +1,15 @@
-import { Request, Response, NextFunction } from "express";
-import jwt, { JwtPayload } from "jsonwebtoken"
+import jwt from "jsonwebtoken"
 import { Socket } from "socket.io";
+import { iuser, iuserExtend, role } from "user-frontend";
 
 export function authSocketMiddleware(socket: Socket, next: (err?: any) => void) {
     const bearerToken = socket.handshake.headers.authorization as string;
     if(!bearerToken) {
         const userID = socket.handshake.query.id as string
-        const userRole = socket.handshake.query.role as models.client.UserEntity.Role
+        const userRole = socket.handshake.query.role as role
         socket.user = {  
-            id: socket.handshake.query.id as string, 
-            role: socket.handshake.query.role as models.client.UserEntity.Role
+            id: userID, 
+            role: userRole
         } 
         next()
     } else {
@@ -23,8 +23,8 @@ export function authSocketMiddleware(socket: Socket, next: (err?: any) => void) 
                     throw new Error();
                 }
                 socket.user = { 
-                    id: (user as models.client.UserEntity.IUser).id,
-                    role: (user as models.client.UserEntity.IUser).role
+                    id: (user as iuserExtend).id,
+                    role: (user as iuserExtend).role
                 } 
                 next();
             });  

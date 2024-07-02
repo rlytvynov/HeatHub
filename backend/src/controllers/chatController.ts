@@ -1,10 +1,11 @@
 import { Request, Response } from "express";
 import Room from "../models/room.entity.js";
+import { role } from "user-frontend";
 
 const chatController = {
     getRooms: async function(req: Request, res: Response) {
         try {
-            if(req.user.role === models.client.UserEntity.Role.ADMIN) {
+            if(req.user.role === "admin" as role) {
                 const rooms = await Room.find({}).exec()
                 const modifiedRooms = rooms.map(room => {
                     const {_id, ...roomObj} = room.toObject()

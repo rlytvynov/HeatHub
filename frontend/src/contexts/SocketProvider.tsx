@@ -1,14 +1,14 @@
 import { createContext, useEffect, useRef, useState } from 'react';
 import { Socket, io } from 'socket.io-client';
 import { useAuthContext } from './AuthProvider';
-export const URL = process.env.REACT_APP_API_URL || `https://localhost:443`;
 
 
-export const SocketContext = createContext<Socket>(null as unknown as Socket)
+export const URL = process.env.REACT_APP_API_URL || `http://localhost:80`;
+export const SocketContext = createContext(null as unknown as Socket)
 
 function SocketProvider({children} : React.PropsWithChildren) {
     const authContext = useAuthContext()
-    const socket = useRef<Socket | null>(null)
+    const socket = useRef<Socket>(null as unknown as Socket)
     const [connected, setConnected] = useState<boolean>(false)
 
     useEffect(() => {
@@ -18,12 +18,12 @@ function SocketProvider({children} : React.PropsWithChildren) {
             },
             query: {
                 "id": localStorage.getItem("default_id") || "",
-                "role": localStorage.getItem("default_role") || ""
+                "role": "customer"
             }
         })
     
         socket.current.on('connect', () => {
-            console.info(`Connected ${authContext.authState.user.id}`)
+            console.info(`Connected ${authContext.user?.id}`)
             setConnected(true)
         })
 
@@ -33,7 +33,7 @@ function SocketProvider({children} : React.PropsWithChildren) {
         });
 
         socket.current.on('disconnect', (reason: string) => {
-            console.info(`Disconnected ${authContext.authState.user.id}`)
+            console.info(`Disconnected ${authContext.user?.id}`)
             setConnected(false)
         })
         socket.current.on('error', err => {
@@ -45,7 +45,7 @@ function SocketProvider({children} : React.PropsWithChildren) {
                 socket.current.disconnect()
             }
         }
-    }, [authContext.authState.authorized])
+    }, [authContext.user?.id])
     
     return (
         <>

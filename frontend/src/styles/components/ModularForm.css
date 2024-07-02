@@ -1,0 +1,29 @@
+.modular-window-wrapper {
+    position: fixed;
+    top: 0;
+    left: 0;
+    display: block;
+    z-index: 100;
+    overflow: auto;
+    width: 100%;
+    height: 100%;
+    backdrop-filter: blur(5px);
+}
+
+.modular-window-wrapper .modular-window {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 30rem;
+    transform: translate(-50%, -50%);
+    animation: slideDown 0.3s ease forwards;
+}
+
+@keyframes slideDown {
+    from {
+      top: -100%;
+    }
+    to {
+      top: 50%;
+    }
+}
