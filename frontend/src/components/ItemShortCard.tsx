@@ -1,5 +1,3 @@
-import { item } from 'item'
-import React from 'react'
 import { itemCart } from '../data/cartStore';
 
 type Props = {
@@ -14,8 +12,7 @@ export default function ItemShortCard({item, onIncrement, onDecrement}: Props) {
             <div style={{display: 'flex', gap: '3rem', alignItems: 'start', height: '100%'}}>
                 <div className="image-container">
                     <img style = {{
-                            width: '100%',
-                            minHeight: '5rem',
+                            minWidth: '8rem',
                             maxHeight: '5rem',
                             objectFit: 'contain'
                     }} src={item.image} alt="image" />

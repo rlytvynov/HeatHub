@@ -26,13 +26,11 @@ class CartServiceClass implements CartInterface {
             const options = {
                 method: "PUT",
                 headers: {
-                    'Content-Type': 'application/json',
                     'Authorization': localStorage.getItem("token") || ""
                 },
                 body: JSON.stringify(items)
             };
-            const data =  await fetchData<{message: 'ok'}>(`${process.env.REACT_APP_API_URL}/api/cart`, options)
-            console.log(data)
+            fetchData<{message: 'ok'}>(`${process.env.REACT_APP_API_URL}/api/cart`, options)
         } catch (error: any) {
             console.log(error)
             throw error

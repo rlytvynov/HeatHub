@@ -1,6 +1,4 @@
 import { ipost } from 'post'
-import React from 'react'
-
 export default function PostCard(props: ipost) {
   return (
     <fieldset className='post-card'>
