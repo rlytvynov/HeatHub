@@ -113,11 +113,12 @@ server.use(admin.options.rootPath, adminRouter)
 server.use(cors(corsOptions));
 server.use(bodyParser.urlencoded({ extended: true }));
 server.use(bodyParser.json())
-server.use('/api/cart', cartRouter)
 server.use('/api/auth', authRouter)
-server.use('/api/chat', chatRouter)
 server.use('/api/users', userRouter)
+server.use('/api/chat', chatRouter)
 server.use('/api/items', itemRouter)
+server.use('/api/cart', cartRouter)
+
 server.get('/api/online', (req: express.Request, res: express.Response) => {
     let users: string[] = []
     if(req.query.type === 'users') {
@@ -159,12 +160,6 @@ io.on("connection", (socket) => {
     socket.on('join-room', (roomID: string, user: iuser) => {
         try {
             socket.join(roomID)
-            // socket.broadcast.to(roomID).emit(`companion-joined-chat-${roomID}`)
-            // if(user.role === 'customer' as role) {
-            //     for(let adminSession of adminSessions) {
-            //         socket.to(adminSession[1]).emit(`user-joined-chat-${roomID}`, roomID)
-            //     }
-            // }
         } catch (error: any) {
             console.log(error.message)
         }
@@ -175,13 +170,6 @@ io.on("connection", (socket) => {
     socket.on('leave-room', (roomID: string, user: iuser) => {
         try {
             socket.leave(roomID)
-            // socket.broadcast.to(roomID).emit(`companion-disjoined-chat-${roomID}`)
-            // if(user.role === 'customer' as role) {
-            //     for(let adminSession of adminSessions) {
-            //         socket.to(adminSession[1]).emit(`user-disjoined-chat-${roomID}`, roomID)
-            //     }
-            // }
-
         } catch (error) {
             console.error(`Error occured: ${error}`)
         }
@@ -199,58 +187,4 @@ io.on("connection", (socket) => {
             socket.to(value).emit('user-disconnected', socket.user)
         }
     });
-
-    // socket.on('get-room-users-online', async (roomID: string, callback: (status: {online: number}) => void) => {
-    //     const sockets = await io.in(roomID).fetchSockets();
-    //     callback({online: sockets.length});
-    // })
-
-    // socket.on('get-companion-data', async (roomID: string, requestUser: iuser, callback:  (status: {ok: boolean}, companion: {name: string, email: string, online: boolean} | null) => void) => {
-    //     try {
-    //         const room = await Room.findById(roomID).exec()
-    //         const sockets = await io.in(roomID).fetchSockets();
-    //         let name: string = '', email: string = '';
-    //         if(requestUser.role === 'admin' as role) {
-    //             try {
-    //                 const user = await User.findById(room!.ownerID).exec()
-    //                 name = user!.fullName
-    //                 email = user!.email
-    //             } catch (error) {
-    //                 name = "Anonim user"
-    //                 email = "noemail@example.com"
-    //             }
-    //         } else {
-    //             name = "Anonim user"
-    //             email = "intermobi@yahoo.com"
-    //         }
-    //         callback({ok: true}, {name, email, online: sockets.length > 1});
-    //     } catch (error) {
-    //         callback({ok: false}, null);
-    //     }
-    // })
-
-
-
-    // socket.on('create-room-try', (message: message, callback: (status: {ok: boolean, roomID: string, error: string | null}) => void) => {
-    //     socketController.createRoom(socket, message, callback)
-    // })
-
-    // socket.on('room-read-try', (roomID: string, user: models.client.UserEntity.IUser, callback: (status: {ok: boolean, error: string | null}) => void) => {
-    //     socketController.readMessageInRoom(socket, roomID, user, callback)
-    // })
-
-    // socket.on('leave-room', (roomID: string, user: iuser) => {
-    //     try {
-    //         socket.leave(roomID)
-    //         socket.broadcast.to(roomID).emit(`companion-disjoined-chat-${roomID}`)
-    //         if(user.role === 'customer' as role) {
-    //             for(let adminSession of adminSessions) {
-    //                 socket.to(adminSession[1]).emit(`user-disjoined-chat-${roomID}`, roomID)
-    //             }
-    //         }
-
-    //     } catch (error) {
-    //         console.error(`Error occured: ${error}`)
-    //     }
-    // })
 });

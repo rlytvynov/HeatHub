@@ -15,7 +15,9 @@ export class RoomExternalStore implements IRoomExternalStore {
         try {
             this.room = await fetchData<iroom>(`${process.env.REACT_APP_API_URL}/api/chat/rooms/${id}`);
             this.emitChange();
-        } catch (error) {;
+        } catch (error) {
+            this.room = undefined
+            this.emitChange()
             throw error;
         }
     }
@@ -29,6 +31,8 @@ export class RoomExternalStore implements IRoomExternalStore {
             this.room = await fetchData<iroom>(`${process.env.REACT_APP_API_URL}/api/chat/room`, options);
             this.emitChange()
         } catch (error) {
+            this.room = undefined
+            this.emitChange()
             throw error;
         }
     }

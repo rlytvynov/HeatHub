@@ -1,14 +1,23 @@
 import { country, iuserExtend, role } from "user"
 import { useAuthContext } from "../../../../contexts/AuthProvider"
 import authErrorHandler from "../../../../utils/authErrorHandler"
+import { useSyncExternalStore } from "react"
+import { cartStore } from "../../../../data/cartStore"
+import CartService from "../../../../services/cart-services"
 type Props = {}
 
 export default function ProfileGeneral({}: Props) {
     const authContext = useAuthContext()
+    const cartItems = useSyncExternalStore(cartStore.subscribe.bind(cartStore), cartStore.getSnapshot.bind(cartStore));
     const handleLogout = async () => {
-        await authErrorHandler()
-        localStorage.removeItem('token')
-        authContext.setUser({id: localStorage.getItem("default_id") as string, role: "customer" as role})
+        try {
+            await CartService.updateCart(cartItems)
+            await authErrorHandler()
+            localStorage.removeItem('token')
+            authContext.setUser({id: localStorage.getItem("default_id") as string, role: "customer" as role})
+        } catch (error: any) {
+            alert(error.message)
+        }
     }
     return (
         <article className="profile general" role="tabpanel" id="tab-general">

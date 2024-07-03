@@ -14,7 +14,6 @@ export function authRESTMiddleware(req: Request, res: Response, next: NextFuncti
                 throw (new Error());
             }
             const {iat, exp, ...iUser} = user as JwtPayload
-            console.log("AAA " + req.body.pipka)
             req.user = iUser as iuserExtend
             next();
         });

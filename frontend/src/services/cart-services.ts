@@ -31,7 +31,8 @@ class CartServiceClass implements CartInterface {
                 },
                 body: JSON.stringify(items)
             };
-            await fetchData<void>(`${process.env.REACT_APP_API_URL}/api/cart`, options)
+            const data =  await fetchData<{message: 'ok'}>(`${process.env.REACT_APP_API_URL}/api/cart`, options)
+            console.log(data)
         } catch (error: any) {
             console.log(error)
             throw error

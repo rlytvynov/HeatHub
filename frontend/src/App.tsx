@@ -84,7 +84,7 @@ function App() {
             socket.off('user-connected', handleUserConnected)
             socket.off('user-disconnected', handleUserDisconnected)
         }
-    }, [socket])
+    }, [authContext.user, socket])
     return (
         <>
             <BrowserRouter>

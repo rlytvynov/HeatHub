@@ -5,6 +5,7 @@ import ProfilePassword from "./ProfilePassword"
 import ProfileBasket from "./ProfileBasket"
 import ProfileOrders from "./ProfileOrders"
 import { cartStore } from "../../../../data/cartStore"
+import CartService from "../../../../services/cart-services"
 
 const enum Tab {
     general, notifications, password, basket, orders
@@ -12,15 +13,15 @@ const enum Tab {
 
 export default function Profile() {
     const [currentTab, setCurrentTab] = useState(Tab.general)
-    useSyncExternalStore(cartStore.subscribe.bind(cartStore), cartStore.getSnapshot.bind(cartStore));
+    const cartItems = useSyncExternalStore(cartStore.subscribe.bind(cartStore), cartStore.getSnapshot.bind(cartStore));
     useEffect(() => {
-        const uploadStore = async () => {
+        const uploadCart = async () => {
             await cartStore.loadBagItems()
         }
-        if(!cartStore.uploaded) {
-            uploadStore()
+        if(!cartStore.isUploaded) {
+            uploadCart()
         }
-    }, [])
+    }, [cartItems])
     return (
         <section className="tabs" style={{maxWidth: "500px"}}>
             <menu role="tablist" aria-label="Sample Tabs">

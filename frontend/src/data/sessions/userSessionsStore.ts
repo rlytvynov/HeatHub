@@ -25,7 +25,7 @@ export class UserSessionsExternalStore implements IUserSessionsExternalStore {
     }
 
     public isUserOnline(id: string): boolean {
-        return this.onlineUsers.find(_id => _id = id)?.length !== 0
+        return this.onlineUsers.find(_id => _id === id) ? true : false
     }
 
     public userDisconnected(user: iuser) {

@@ -24,7 +24,7 @@ const cartController = {
             }
             cart.items = req.body
             await cart.save()
-            return res.status(200)
+            return res.status(200).json({message: 'ok'})
         } catch (error: any) {
             console.log(error.message)
             res.status(500).json({message: 'Internal Server Error'})

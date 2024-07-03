@@ -15,20 +15,24 @@ export default function ChatCustomer({}: Props) {
         async function getRoom() {
             try {
                 if('email' in authContext.user!) {
-                    if(!room || room.ownerID !== authContext.user!.id)
-                    await roomStore.loadRoom()
+                    if(!room || room.ownerID !== authContext.user!.id) {
+                        console.log("Room UpLoaded!")
+                        await roomStore.loadRoom()
+                    }
                 } else {
                     const roomID = localStorage.getItem('roomID')
                     if(roomID) {
                         if(!room || room.ownerID !== authContext.user!.id) {
+                            console.log("Room UpLoaded!")
                             await roomStore.loadRoomById(roomID)
                         }
                     }
                 }
             } catch (error: any) {
-                alert(error.message)
+                
             }
         }
+        
         getRoom()
     }, [authContext.user])
     return (

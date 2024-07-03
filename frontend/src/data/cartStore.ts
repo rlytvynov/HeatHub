@@ -20,59 +20,16 @@ interface ICartExternalStore {
 export class CartExternalStore implements  ICartExternalStore {
     private bagItems: itemCart[] = []
     private listeners: (() => void)[] = [];
-    public uploaded: boolean = false
+    public isUploaded: boolean = false
     public isChanged: boolean = false
 
     public async loadBagItems() {
         try {
-            
             this.bagItems =  await CartService.getCart()
-            // this.bagItems = [
-            //     {
-            //         id: "1",
-            //         image: "https://www.sanhua-aweco.com/uploads/images/products/aweco-049_list-no-12_tubular-heating-elements_washing-machine-heating-element_several-1_250_250.png",
-            //         name: "Deluxe Tubular Radiator",
-            //         model: "DT-100",
-            //         price: 199.99,
-            //         amount: 1
-            //     },
-            //     {
-            //         id: "2",
-            //         image: "https://www.sanhua-aweco.com/uploads/images/products/aweco-056_list-no_250_250.png",
-            //         name: "Compact BPS Heater",
-            //         model: "BPS-200",
-            //         price: 149.99,
-            //         amount: 1
-            //     },
-            //     {
-            //         id: "3",
-            //         image: "https://www.sanhua-aweco.com/uploads/images/products/aweco-049_list-no-12_tubular-heating-elements_washing-machine-heating-element_several-1_250_250.png",
-            //         name: "Eco-Friendly Tubular Radiator",
-            //         model: "ET-300",
-            //         price: 249.99,
-            //         amount: 3
-            //     },
-            //     {
-            //         id: "4",
-            //         image: "https://pngimg.com/d/solar_panel_PNG127.png",
-            //         name: "Luxury BPS Radiator",
-            //         model: "LB-400",
-            //         price: 299.99,
-            //         amount: 1
-            //     },
-            //     {
-            //         id: "5",
-            //         image: "https://www.amerescosolar.com/wp-content/uploads/ve-bluesolar-12-24-lcdusb-5.png",
-            //         name: "Standard Tubular Radiator",
-            //         model: "ST-500",
-            //         price: 179.99,
-            //         amount: 2
-            //     }
-            // ]
-            this.uploaded = true
+            this.isUploaded = true
             this.emitChange();
         } catch (error: any) {
-            alert("Схуяле?")
+            alert("Ошибка загрузки корзины")
         }
     }
     public updateCartWithNewItem(item: itemCart) {
@@ -92,13 +49,12 @@ export class CartExternalStore implements  ICartExternalStore {
             if(item.id === id) {
                 if(type === 'increment') {
                     amount? item.amount+=amount : item.amount++
-                    wasChanged = true
                 } else {
                     if(item.amount !== 0) {
                         item.amount--
                     }
-                    wasChanged = true
                 }
+                wasChanged = true
             }
             return item.amount > 0 ? item : undefined;
         }).filter(item => item !== undefined) as itemCart[]
@@ -106,16 +62,6 @@ export class CartExternalStore implements  ICartExternalStore {
         if(wasChanged) {
             this.isChanged = true
             this.emitChange()
-        }
-    }
-
-    public async save() {
-        try {
-            await CartService.updateCart(this.bagItems)
-            this.isChanged = false
-            this.emitChange()
-        } catch (error: any) {
-            alert("Ошибка сохранения корзины")
         }
     }
 

@@ -12,8 +12,8 @@ export default function ProfileBasket({}: Props) {
     const handleDecrement = (id: string) => {
         cartStore.updateCartWithItem(id, 'decrement')
     };
-    const saveCart = () => {
-        cartStore.isChanged && cartStore.save()
+    const onOrder = () => {
+        //generateOrder()
     }
 
     return (
@@ -31,7 +31,7 @@ export default function ProfileBasket({}: Props) {
                     items.length === 0 && "No items yet"
                 }
             </fieldset>
-            <button onClick = {saveCart}>Save</button>
+            <button onClick = {onOrder}>Order</button>
         </article>
     )
 }
