@@ -1,5 +1,5 @@
 
-# HeatHun
+# HeatHub
 
 Electronics and electrical equipment store
 
@@ -15,15 +15,9 @@ You can easily install those software:
 ## Environment Variables
 
 To run this project, you will need to add the following environment variables to your `.env` files
-`/backend/.env`
-`HTTPS_PORT`
-`HTTP_PORT`
-`JWT_SECRET_KEY`
-`DB_URL`
+/backend/.env `HTTPS_PORT` `HTTP_PORT` `HTTP_PORT` `JWT_SECRET_KEY` `DB_URL`
+/frontend/.env `REACT_APP_API_URL` `REACT_APP_PUBLIC_URL`
 
-`/frontend/.env`
-`REACT_APP_API_URL`
-`REACT_APP_PUBLIC_URL`
 ## Deployment
 
 To deploy server run
