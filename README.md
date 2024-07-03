@@ -10,13 +10,19 @@ You can easily install those software:
 1. `sudo apt install nodejs`
 `sudo apt install npm`
 
-2. Open folders `/backend` and `frontend` in your terminal and run `npm install`
+2. Open folders `/backend` and `/frontend` in your terminal and run `npm install`
 
 ## Environment Variables
 
 To run this project, you will need to add the following environment variables to your `.env` files
-/backend/.env `HTTPS_PORT` `HTTP_PORT` `HTTP_PORT` `JWT_SECRET_KEY` `DB_URL`
-/frontend/.env `REACT_APP_API_URL` `REACT_APP_PUBLIC_URL`
+
+#### /backend/.env
+
+`HTTPS_PORT` `HTTP_PORT` `HTTP_PORT` `JWT_SECRET_KEY` `DB_URL`
+
+#### /frontend/.env
+
+`REACT_APP_API_URL` `REACT_APP_PUBLIC_URL`
 
 ## Deployment
 
