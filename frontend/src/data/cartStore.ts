@@ -21,7 +21,6 @@ export class CartExternalStore implements  ICartExternalStore {
     private bagItems: itemCart[] = []
     private listeners: (() => void)[] = [];
     public isUploaded: boolean = false
-    public isChanged: boolean = false
 
     public async loadBagItems() {
         try {
@@ -32,36 +31,58 @@ export class CartExternalStore implements  ICartExternalStore {
             alert("Ошибка загрузки корзины")
         }
     }
-    public updateCartWithNewItem(item: itemCart) {
-        if(this.bagItems.find(_item => _item.id === item.id)) {
-            this.updateCartWithItem(item.id, 'increment', item.amount)
-            return
-        } else {
-            this.bagItems = [...this.bagItems, item]
-            this.isChanged = true
-            this.emitChange()
+    public async updateCartWithNewItem(item: itemCart) {
+        try {
+            if(this.bagItems.find(_item => _item.id === item.id)) {
+                this.updateCartWithItem(item.id, 'increment', item.amount)
+                return
+            } else {
+                this.bagItems = [...this.bagItems, item]
+                await CartService.updateCart(this.bagItems)
+                this.emitChange()
+            } 
+        } catch (error: any) {
+            console.log(error.message)
+            throw error
         }
     }
 
-    public updateCartWithItem(id: string, type: 'increment' | 'decrement', amount?: number) {
-        let wasChanged: boolean = false
-        this.bagItems = this.bagItems.map(item => {
-            if(item.id === id) {
-                if(type === 'increment') {
-                    amount? item.amount+=amount : item.amount++
-                } else {
-                    if(item.amount !== 0) {
-                        item.amount--
+    public async updateCartWithItem(id: string, type: 'increment' | 'decrement', amount?: number) {
+        try {
+            let wasChanged: boolean = false
+            this.bagItems = this.bagItems.map(item => {
+                if(item.id === id) {
+                    if(type === 'increment') {
+                        amount? item.amount+=amount : item.amount++
+                    } else {
+                        if(item.amount !== 0) {
+                            item.amount--
+                        }
                     }
+                    wasChanged = true
                 }
-                wasChanged = true
-            }
-            return item.amount > 0 ? item : undefined;
-        }).filter(item => item !== undefined) as itemCart[]
+                return item.amount > 0 ? item : undefined;
+            }).filter(item => item !== undefined) as itemCart[]
+    
+            if(wasChanged) {
+                await CartService.updateCart(this.bagItems)
+                this.emitChange()
+            }   
+        } catch (error: any) {
+            console.log(error.message)
+            throw error
+        }
+    }
 
-        if(wasChanged) {
-            this.isChanged = true
+    public async clearCart() {
+        try {
+            await CartService.makeOrder(this.bagItems)
+            await CartService.clearCart()
+            this.bagItems = []
             this.emitChange()
+        } catch (error: any) {
+            console.log(error.message)
+            throw error
         }
     }
 

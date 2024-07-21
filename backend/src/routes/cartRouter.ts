@@ -5,6 +5,7 @@ const router = express.Router()
 
 router.get('/', authRESTMiddleware, cartController.getItems)
 router.put('/', authRESTMiddleware, cartController.updateCart)
+router.delete('/', authRESTMiddleware, cartController.clearCart)
 
 
 export default router

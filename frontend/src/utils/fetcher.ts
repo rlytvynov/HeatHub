@@ -1,3 +1,4 @@
+'use server';
 async function fetchData<T>(url: string, options?: RequestInit): Promise<T> {
     try {
         const response = await fetch(url, {

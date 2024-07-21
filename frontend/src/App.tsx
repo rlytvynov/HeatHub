@@ -34,7 +34,6 @@ import { useContext, useEffect, useSyncExternalStore } from "react";
 import { SocketContext } from "./contexts/SocketProvider";
 import { iuser } from "user";
 import { adminSessionsStore } from "./data/sessions/adminSessionsStore";
-import OnlineUsers from "./components/OnlineUsers";
 import { userSessionsStore } from "./data/sessions/userSessionsStore";
 import { roomStore } from "./data/rooms/roomStore";
 import { adminRoomsStore } from "./data/rooms/adminRoomsStore";
@@ -90,7 +89,7 @@ function App() {
             <BrowserRouter>
                 <Navbar/>
                 <main>
-                    <h1>Electronics and electrical equipment store</h1>
+                    <h1>Магазин электроники и электротезники</h1>
                     <hr />
                     <Routes>
                         <Route path="/" element={<Home />}>
@@ -130,7 +129,7 @@ function App() {
                         {/* <Route path="/:category/:subcategory/:itemId" element={<ItemPage />} /> */}
                     </Routes>
                 </main>  
-                <OnlineUsers users={users.length + admins.length}/>
+                {/* <OnlineUsers users={users.length + admins.length}/> */}
             </BrowserRouter> 
         </>
     )

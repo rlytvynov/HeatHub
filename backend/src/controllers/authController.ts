@@ -5,7 +5,17 @@ import jwt from "jsonwebtoken"
 
 const authController = {
     me: async function (req: Request, res: Response) {
-        return res.status(200).json(req.user)
+        try {
+            const user = await User.findById(req.user.id, '-__v').exec()
+            if(user) {
+                const {_id, password, ...userObj} = user.toObject()
+                return res.status(200).json(userObj)
+            } else {
+                return res.status(404).json("Not Found")
+            }
+        } catch (error) {
+            res.status(500).json({message: 'Internal server error'})
+        }
     },
 
     login: async function (req: Request, res: Response) {
@@ -21,7 +31,7 @@ const authController = {
             }
 
             const {_id, password, ...userObj} = candidate.toObject()
-            const token = `Bearer ${jwt.sign({id: _id.toString(), ...userObj}, process.env.JWT_SECRET_KEY || "secret", { expiresIn: "24h" })}`;
+            const token = `Bearer ${jwt.sign({id: _id.toString(), role: userObj.role}, process.env.JWT_SECRET_KEY || "secret", { expiresIn: "24h" })}`;
             res.status(200).json({ token, user: {id: _id.toString(), ...userObj}});
         } catch (error) {
             console.log(error)

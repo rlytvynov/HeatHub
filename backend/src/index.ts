@@ -22,6 +22,8 @@ import itemRouter from "./routes/itemRouter.js"
 import Tubular from "./models/tubular.entity.js"
 import Bps from "./models/bps.entity.js"
 import cartRouter from "./routes/cartRouter.js"
+import nodemailer from "nodemailer"
+import orderRouter from "./routes/orderRouter.js"
 
 // const HTTPS_PORT = process.env.HTTPS_PORT || 8080
 const HTTP_PORT = process.env.HTTP_PORT || 8000
@@ -118,8 +120,8 @@ server.use('/api/users', userRouter)
 server.use('/api/chat', chatRouter)
 server.use('/api/items', itemRouter)
 server.use('/api/cart', cartRouter)
-
-server.get('/api/online', (req: express.Request, res: express.Response) => {
+server.use('/api/order', orderRouter)
+server.get('/api/online', async (req: express.Request, res: express.Response) => {
     let users: string[] = []
     if(req.query.type === 'users') {
         for(const [key, value] of userSessions) {
@@ -133,7 +135,71 @@ server.get('/api/online', (req: express.Request, res: express.Response) => {
         return res.status(200).json({admins: users})
     }
 })
+server.post('/api/call', async (req: express.Request, res: express.Response) => {
+    const name = req.body.name ? req.body.name : "Не указано"
+    const phone = req.body.phone ? req.body.phone : "Не указано"
+    const email = req.body.email
+    const transporter = nodemailer.createTransport({
+        service: 'gmail',
+        auth: {
+            user: process.env.ADMIN_EMAIL_LOGIN,
+            pass: process.env.ADMIN_EMAIL_PASSWORD,
+        },
+    });
 
+    const mailOptions = {
+        from: `"${name ? name : 'Без имени'}" <${email}>`,
+        to: `rlitvinov2003@gmail.com`,
+        subject: "HeatHub: Обратная связь",
+        html: `<b>Имя: ${name}</b><br/><b>Телефон: ${phone}</b><br/><b>Почта: ${email}</b><br/>`,
+    };
+  
+    try {
+      await transporter.sendMail(mailOptions);
+      res.status(200).json({ message: 'Request was send'});
+    } catch (error) {
+        console.log(error)
+        res.status(500).json({ message: 'Error sending email', error: error });
+    }
+})
+
+server.post('/api/call-order', async (req: express.Request, res: express.Response) => {
+    const name = req.body.name ? req.body.name : "Не указано"
+    const phone = req.body.phone ? req.body.phone : "Не указано"
+    const email = req.body.email
+    const item = req.body.item
+
+    const transporter = nodemailer.createTransport({
+        service: 'gmail',
+        auth: {
+            user: process.env.ADMIN_EMAIL_LOGIN,
+            pass: process.env.ADMIN_EMAIL_PASSWORD,
+        },
+    });
+    
+    const mailOptions = {
+        from: `"${name ? name : 'Без имени'}" <${email}>`,
+        to: `rlitvinov2003@gmail.com`,
+        subject: "HeatHub: Новый заказ",
+        html: 
+            `<b>Имя: ${name}</b><br/><b>Телефон: ${phone}</b><br/><b>Почта: ${email}</b><br/>`
+            +
+            `<div>
+                <p>${item.name}</p>
+                <p>${item.model}</p>
+                <p>${item.price}</p>
+                <p>${item.amount}</p>
+            </div>`
+    };
+  
+    try {
+      await transporter.sendMail(mailOptions);
+      res.status(200).json({ message: 'Request was send'});
+    } catch (error) {
+        console.log(error)
+        res.status(500).json({ message: 'Error sending email', error: error });
+    }
+})
 
 const httpServer = http.createServer(server).listen(HTTP_PORT, () => {
     console.log(`HTTPS server is listening at http://localhost:${HTTP_PORT} 🚀`)

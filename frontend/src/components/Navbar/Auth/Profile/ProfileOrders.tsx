@@ -7,10 +7,7 @@ export default function ProfileOrders({}: Props) {
         <article className="profile orders" role="tabpanel" id="tab-notifications">
             <fieldset>
                 <legend>Orders</legend>
-                <ul className="tree-view">
-                    <li>We can put</li>
-                    <li>We want in here</li>
-                </ul>
+                <div>Coming soon...</div>
             </fieldset>
         </article>
     )

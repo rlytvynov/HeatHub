@@ -1,6 +1,7 @@
 import { useContext, useEffect, useState, useSyncExternalStore } from "react"
 import send from "../../assets/send.png"
 import attach from "../../assets/attached.png"
+import exit from "../../assets/logout.png"
 import "../../styles/components/Room.css"
 import { roomStore } from "../../data/rooms/roomStore"
 import { useAuthContext } from "../../contexts/AuthProvider"
@@ -72,7 +73,18 @@ export default function Room({room, setRoom}: Props) {
     return (
         <>
             <div className="window-body">
-                {authContext.user?.role === 'admin' && <button onClick={() => setRoom!(null)}>Leave</button>}
+                {authContext.user?.role === 'admin' 
+                    && 
+                    <div>
+                        <button style={{
+                        padding: 0, 
+                        minWidth: '2rem',
+                        width: '2rem',
+                        float: "right"
+                    }} onClick={() => setRoom!(null)}><img style={{width: '1.4rem', height: '1.4rem'}} src={exit}></img></button>
+                    </div>
+                    
+                }
                 <div className="chat-container">
                     <div className="message-wrapper">
                         {

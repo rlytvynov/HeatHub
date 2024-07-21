@@ -27,7 +27,6 @@ export default function Login({swap}: Props) {
             const response = await AuthService.login(email, password)
             authState.setUser(response.user)
             localStorage.setItem('token', response.token)
-            alert("Succesfully logged in!")
         } catch (error: any) {
             alert(error.message)
         }

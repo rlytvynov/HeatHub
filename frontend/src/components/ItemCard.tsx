@@ -6,13 +6,47 @@ import ModularForm from "./Modulars/ModularForm"
 import ItemShortCard from "./ItemShortCard"
 import { cartStore } from "../data/cartStore"
 import fetchData from "../utils/fetcher"
+import { SubmitHandler, useForm } from "react-hook-form"
+import CartService from "../services/cart-services"
 
 type ItemTypes = Tubular.itubular | BPS.ibps
+interface FormRequestACall {
+    email: string,
+    phone: string
+}
 export default function ItemCard(props: ItemTypes) {
     const authContext = useAuthContext()
     const [modularWindows, setModularWindows] = useState({cart: false, call: false})
-    const [itemsToCart, setItemsToCart] = useState(0)
+    const [itemsToCart, setItemsToCart] = useState(1)
     const items = useSyncExternalStore(cartStore.subscribe.bind(cartStore), cartStore.getSnapshot.bind(cartStore));
+    const {
+        register, 
+        handleSubmit, 
+        formState: { errors },
+        reset
+    } = useForm<FormRequestACall>()
+
+    const onSubmit: SubmitHandler<FormRequestACall> = async (data) => {
+        try {
+            const response = await fetchData<{message: string}>(`${process.env.REACT_APP_API_URL}/api/call-order`, {
+                method: "POST",
+                body: JSON.stringify({
+                    name: 'email' in authContext.user! ? authContext.user.fullName : '',
+                    email: data.email,
+                    phone: data.phone,
+                    item: {
+                        name:  props.name,
+                        price: props.price,
+                        model: props.model,
+                        amount: itemsToCart
+                    }
+                })
+            })
+            reset({email: '', phone: ''})
+        } catch (error: any) {
+            alert(error.message)
+        }
+    }
     const showModularWindowCart = () => {
         setModularWindows(prev => ({...prev, cart: true}))
     }
@@ -33,14 +67,18 @@ export default function ItemCard(props: ItemTypes) {
         setItemsToCart(prev => prev + 1)
     }
     const handleDecrement = () => {
-        if(itemsToCart !== 0) {
+        if(itemsToCart !== 1) {
             setItemsToCart(prev => prev - 1)
         }
     }
-    const handleAddToCart = () => {
-        cartStore.updateCartWithNewItem({id: props.id, name: props.name, price: props.price, image: props.image, model: props.model, amount: itemsToCart})
-        hideModularWindowCart()
-        setItemsToCart(0)
+    const handleAddToCart = async () => {
+        try {
+            cartStore.updateCartWithNewItem({id: props.id, name: props.name, price: props.price, image: props.image, model: props.model, amount: itemsToCart})
+            hideModularWindowCart()
+            setItemsToCart(0)
+        } catch (error) {
+            console.log(error)
+        }
     }
 
     return (
@@ -78,16 +116,36 @@ export default function ItemCard(props: ItemTypes) {
                     {props.tags && <div style={{display: 'flex', gap: '0.3rem', flexWrap: 'wrap'}}>{props.tags.map((tag, index) => index < 3 && <fieldset key={index} style={{padding: '2px 5px'}}>#{tag}</fieldset>)}</div>}
                 </div>
                 <div className="item-card-buttons" style={{display: 'flex', gap: '1rem', justifyContent: 'flex-start'}}>
-                    <button onClick = {showModularWindowCall}>Buy</button>
-                    {'email' in authContext.user! && <button onClick={showModularWindowCart}>To cart</button>}
+                    {
+                        'email' in authContext.user! ? 
+                        <button onClick = {showModularWindowCart}>Buy</button>
+                        :
+                        <button onClick = {showModularWindowCall}>Buy</button>
+                    }
                 </div>
             </fieldset>
             {
                 modularWindows.call &&
                 <ModularForm hideModularWindow={hideModularWindowCall}>
-                    <h4 style={{textAlign: 'center', lineHeight: '2.2rem', marginTop: 0}}>Leave your phone number or another type of contact and our manager will contact you</h4>
-                    <input style={{width: '100%'}} type="text" name="" id="" />
-                    <button style={{marginTop: '1rem', width: '100%'}} >Request a call</button>
+                    <form onSubmit={handleSubmit(onSubmit)}>
+                        <ItemShortCard 
+                            item={
+                                {id: props.id, name: props.name, price: props.price, image: props.image, model: props.model, amount: itemsToCart}
+                            }
+                            onIncrement={handleIncrement}
+                            onDecrement={handleDecrement}
+                        />
+                        <h4 style={{textAlign: 'center', lineHeight: '2.2rem', marginTop: 0}}>Leave your contacts and admin will contact you</h4>
+                        <div className="field-row-stacked">
+                            <label className="required" htmlFor="email-contact">Email</label>
+                            <input className={errors.email && 'error-field'} {...register("email", {pattern: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, required: true})} style={{width: '100%'}} type="email" id="email-contact"/>
+                        </div>
+                        <div className="field-row-stacked">
+                            <label htmlFor="phone-contact">Phone (Optional)</label>
+                            <input {...register("phone")} style={{width: '100%'}} type="text" id="phone-contact"/>
+                        </div>
+                        <button type="submit" style={{marginTop: '1rem', width: '100%'}} >Request a call</button>
+                    </form>
                 </ModularForm>
             }
             {   modularWindows.cart && 

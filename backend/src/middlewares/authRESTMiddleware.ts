@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import jwt, { JwtPayload } from "jsonwebtoken"
-import { iuserExtend } from "user-frontend";
+import { iuser } from "user-frontend";
 
 export function authRESTMiddleware(req: Request, res: Response, next: NextFunction) {
     const bearerToken = req.headers.authorization
@@ -13,8 +13,8 @@ export function authRESTMiddleware(req: Request, res: Response, next: NextFuncti
             if (error) {
                 throw (new Error());
             }
-            const {iat, exp, ...iUser} = user as JwtPayload
-            req.user = iUser as iuserExtend
+            const {iat, exp, ...other} = user as JwtPayload
+            req.user = other as iuser
             next();
         });
       } catch (error) {

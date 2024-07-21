@@ -3,7 +3,7 @@ import fetchData from "../utils/fetcher";
 
 interface CartInterface {
     getCart: () => Promise<itemCart[]>
-    updateCart: (items: itemCart[]) => Promise<void>
+    updateCart: (item: itemCart | itemCart[]) => Promise<void>
 }
 
 class CartServiceClass implements CartInterface {
@@ -17,22 +17,52 @@ class CartServiceClass implements CartInterface {
             };
             const bagItems = await fetchData<itemCart[]>(`${process.env.REACT_APP_API_URL}/api/cart`, options)
             return bagItems
-        } catch (error) {
+        } catch (error: any) {
+            console.log(error)
             throw error
         }
     }
-    async updateCart(items: itemCart[]) : Promise<void> {
+    async updateCart(item: itemCart | itemCart[]) : Promise<void> {
         try {
             const options = {
                 method: "PUT",
                 headers: {
                     'Authorization': localStorage.getItem("token") || ""
                 },
-                body: JSON.stringify(items)
+                body: JSON.stringify(item)
             };
             fetchData<{message: 'ok'}>(`${process.env.REACT_APP_API_URL}/api/cart`, options)
         } catch (error: any) {
-            console.log(error)
+            console.log(error.message)
+            throw error
+        }
+    }
+    async clearCart(): Promise<void> {
+        try {
+            const options = {
+                method: "DELETE",
+                headers: {
+                    'Authorization': localStorage.getItem("token") || ""
+                }
+            };
+            fetchData<{message: 'ok'}>(`${process.env.REACT_APP_API_URL}/api/cart`, options)
+        } catch (error: any) {
+            console.log(error.message)
+            throw error
+        }
+    }
+    async makeOrder(items: itemCart[]): Promise<void> {
+        try {
+            const options = {
+                method: "POST",
+                headers: {
+                    'Authorization': localStorage.getItem("token") || ""
+                },
+                body: JSON.stringify(items)
+            };
+            fetchData<{message: 'ok'}>(`${process.env.REACT_APP_API_URL}/api/order`, options)
+        } catch (error: any) {
+            console.log(error.message)
             throw error
         }
     }

@@ -1,6 +1,7 @@
 import  {useEffect, useSyncExternalStore } from 'react'
 import { cartStore } from '../../../../data/cartStore';
 import ItemShortCard from '../../../ItemShortCard';
+import CartService from '../../../../services/cart-services';
 
 type Props = {}
 
@@ -9,11 +10,19 @@ export default function ProfileBasket({}: Props) {
     const handleIncrement = (id: string) => {
         cartStore.updateCartWithItem(id, 'increment')
     };
+    
     const handleDecrement = (id: string) => {
         cartStore.updateCartWithItem(id, 'decrement')
     };
-    const onOrder = () => {
-        //generateOrder()
+
+    const onOrder = async () => {
+        try {
+            await cartStore.clearCart()
+            alert("Your order is processing")
+        } catch (error: any) {
+            alert (error.message)
+            console.log(error.message)
+        }
     }
 
     return (

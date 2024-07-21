@@ -1,9 +1,18 @@
 import { useCallback, useState } from "react"
 import { NavLink, Outlet } from "react-router-dom"
 import ModularForm from "../components/Modulars/ModularForm"
+import { SubmitHandler, useForm } from "react-hook-form"
+import fetchData from "../utils/fetcher"
+import { useAuthContext } from "../contexts/AuthProvider"
 
 type Props = {}
+interface FormRequestACall {
+    email: string,
+    phone: string
+}
+
 function Home({}: Props) {
+    const authContext = useAuthContext()
     const [modularWindow, setModularWindow] = useState(false)
     const showModularWindow = () => {
         setModularWindow(true)
@@ -11,6 +20,29 @@ function Home({}: Props) {
     const hideModularWindow = useCallback(() => {
         setModularWindow(false)
     }, [])
+    const {
+        register, 
+        handleSubmit, 
+        formState: { errors },
+        reset
+    } = useForm<FormRequestACall>()
+
+    const onSubmit: SubmitHandler<FormRequestACall> = async (data) => {
+        try {
+            const response = await fetchData<{message: string}>(`${process.env.REACT_APP_API_URL}/api/call`, {
+                method: "POST",
+                body: JSON.stringify({
+                    name: 'email' in authContext.user! ? authContext.user.fullName : '',
+                    email: data.email,
+                    phone: data.phone
+                })
+            })
+            reset({email: '', phone: ''})
+        } catch (error: any) {
+            alert(error.message)
+        }
+    }
+
   return (
     <>
         <div className="container">
@@ -72,9 +104,18 @@ function Home({}: Props) {
         </div>
         {   modularWindow && 
             <ModularForm hideModularWindow={hideModularWindow}>
-                <h4 style={{textAlign: 'center', lineHeight: '2.2rem', marginTop: 0}}>Leave your phone number or another type of contact and our manager will contact you</h4>
-                <input style={{width: '100%'}} type="text" name="" id="" />
-                <button style={{marginTop: '1rem', width: '100%'}} >Request a call</button>
+                <form onSubmit={handleSubmit(onSubmit)}>
+                    <h4 style={{textAlign: 'center', lineHeight: '2.2rem', marginTop: 0}}>Leave your email or another type of contact and our manager will contact you</h4>
+                    <div className="field-row-stacked">
+                        <label className="required" htmlFor="email-contact">Email</label>
+                        <input className={errors.email && 'error-field'} {...register("email", {pattern: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, required: true})} style={{width: '100%'}} type="email" id="email-contact"/>
+                    </div>
+                    <div className="field-row-stacked">
+                        <label htmlFor="phone-contact">Phone (Optional)</label>
+                        <input {...register("phone")} style={{width: '100%'}} type="text" id="phone-contact"/>
+                    </div>
+                    <button type="submit" style={{marginTop: '1rem', width: '100%'}} >Request a call</button>
+                </form>
             </ModularForm>
         }
     </>
